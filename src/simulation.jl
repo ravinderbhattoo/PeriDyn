@@ -1,33 +1,50 @@
-struct AbstractEnv
+mutable struct AbstractEnv
+    id::Int64
     type::Array{Int64,1}
+    ghost_atoms::Array{Int64,1}
+    state::Int64
     y::Array{Float64,2}
     v::Array{Float64,2}
     f::Array{Float64,2}
-    time::Float64
+    time_step::Int64
     dt::Float64
-    N::Int64
     neighs::Array{Int64,2}
+    boundary_conditions::Any
     short_range_repulsion::Any
     material_blocks::Any
 end
 
 
-function Env(materials,short_range_repulsion,time,dt)
-    type = materials[1].type*ones(Int64,size(materials[1].general.y,1))
+function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2)
+    type = materials[1].type*ones(Int64,size(materials[1].general.y,2))
     for i in 2:size(materials,1)
-        type = vcat(type,materials[i].type*ones(Int64,size(materials[i].general.y,1)))
+        type = vcat(type,materials[i].type*ones(Int64,size(materials[i].general.y,2)))
     end
     y = materials[1].general.y
     for mat in materials[2:end]
-        y = vcat(y,mat.general.y)
+        y = hcat(y,mat.general.y)
     end
     v = materials[1].general.velocity
     for mat in materials[2:end]
-        v = vcat(v,mat.general.velocity)
+        v = hcat(v,mat.general.velocity)
     end
-    N = Int64(time/dt)
-    return AbstractEnv(type,y,v,0v,time,dt,N,zeros(2,2),short_range_repulsion,materials)
+    return AbstractEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials)
 end
 
+function set_ghost_atoms!(env,ghost_atoms)
+    env.ghost_atoms[1:end,1:end] = ghost_atoms
+end
+
+function set_env_active!(env)
+    env.state = 2
+end
+
+function set_env_idel!(env)
+    env.state = 1
+end
+
+function set_env_inactive!(env)
+    env.state = 0
+end
 
 #
