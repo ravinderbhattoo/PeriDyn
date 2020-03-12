@@ -20,11 +20,12 @@ end
 
 
 function velocity_verlet(env::AbstractEnv;freq1=10,freq2=50)
+    mkpath("./output")
     inc = 0
     for i in 1:env.N
         velocity_verlet_step(env)
         if i%freq1==0.0
-            write_data(string("datafile",inc),1,env.type,env.y)
+            write_data(string("./output/datafile",inc),1,env.type,env.y)
             inc += 1
             per=i/env.N*100
             print(per,"% over\n")

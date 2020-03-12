@@ -29,13 +29,11 @@ mat_gen2 = Material(y2,v2,x2,x2[:,1]*0 .+ 1, 1000.0, 3.1, 0.5, max_neigh=8)
 mat_spec2 = OrdinaryStateBasedSpecific(10.0,10.0,mat_gen2)
 block2 = OrdinaryStateBasedMaterial(2,mat_gen2,mat_spec2)
 
-RM = SimpleRepulsionModel(2.0,1.0,block1,block2,distanceX=2)
+RM = SimpleRepulsionModel(2.0,100.0,block1,block2,distanceX=2)
 
 env = Env([block1,block2],[RM],1500.0,0.2)
 
 pos = velocity_verlet(env)
-
-#write_data("./datafile.data",1,env.type,pos)
 
 
 #
