@@ -1,7 +1,7 @@
-function update_acc!(env)
+function update_acc!(env::AbstractEnv)
     env.f .*= 0
     for i in 1:size(env.material_blocks,1)
-        env.f[env.type.==env.material_blocks[i].type,:] .+= s_force_density_T(env.y[env.type.==env.material_blocks[i].type,:],env.material_blocks[i])/env.material_blocks[i].general.density
+        env.f[:,env.type.==env.material_blocks[i].type] .+= s_force_density_T(env.y[:,env.type.==env.material_blocks[i].type],env.material_blocks[i])/env.material_blocks[i].general.density
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
@@ -9,32 +9,56 @@ function update_acc!(env)
 end
 
 
-function velocity_verlet_step(env)
+function velocity_verlet_step!(env::AbstractEnv)
     update_acc!(env)
     c = env.dt/2
     env.v .+= c.*env.f
     env.y .+= env.dt.*env.v
+    for bc in env.boundary_conditions
+        apply_bc!(env,bc)
+    end
     update_acc!(env)
     env.v .+= c.*env.f
+    env.time_step += 1
 end
 
 
-function velocity_verlet(env::AbstractEnv;freq1=10,freq2=50)
+function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50)
     mkpath("./output")
-    inc = 0
-    for i in 1:env.N
-        velocity_verlet_step(env)
-        if i%freq1==0.0
-            write_data(string("./output/datafile",inc),1,env.type,env.y)
-            inc += 1
-            per=i/env.N*100
-            print(per,"% over\n")
-        end
-        if i%freq2==0.0
-            for i in 1:size(env.short_range_repulsion,3)
-            update_repulsive_neighs!(env.y,env.type,env.short_range_repulsion[i])
-            end
+    print("\nUpdating neighbors for collision..................")
+    for id in 1:size(envs,1)
+        env = envs[id]
+        for rm in 1:size(env.short_range_repulsion,1)
+            update_repulsive_neighs!(env.y,env.type,env.short_range_repulsion[rm])
         end
     end
-    return pos
+    print("Done\n")
+
+    for i in 1:N
+        for id in 1:size(envs,1)
+            if envs[id].state==2
+                velocity_verlet_step!(envs[id])
+            end
+        end
+
+        if i%freq1==0.0
+            for id in 1:size(envs,1)
+                env = envs[id]
+                write_data(string("./output/datafile_env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
+            end
+            print(i/N*100,"% over\n")
+        end
+
+        if i%freq2==0.0
+            print("\nUpdating neighbors for collision..................")
+            for env in envs
+                if env.state[1]==2
+                    for rm in 1:size(env.short_range_repulsion,1)
+                        update_repulsive_neighs!(env.y,env.type,env.short_range_repulsion[rm])
+                    end
+                end
+            end
+            print("Done\n")
+        end
+    end
 end
