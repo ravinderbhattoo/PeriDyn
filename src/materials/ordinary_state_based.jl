@@ -12,37 +12,45 @@ end
 
 struct OrdinaryStateBasedMaterial<:PeridynamicsMaterial
     type::Int64
-    general::AbstractMaterial
+    general::GeneralMaterial
     specific::OrdinaryStateBasedSpecific
 end
 
 
 function s_force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
+    force = zeros(size(y))
+    X = Float64[1.0,0.0,0.0]
+    Y = Float64[1.0,0.0,0.0]
     S = mat.general
     K = mat.specific.bulk_modulus
     G = mat.specific.shear_modulus
     m = mat.specific.weighted_volume
     theta = dilatation(y,S,m)
-    force = y*0
-    for i in 1:size(S.x,1)
-        for k in 1:size(S.family,2)
-            if !S.damage[i,k]
-                force[i,:] .+= [0,0,0]
+    for i in 1:size(S.x,2)
+        for k in 1:size(S.family,1)
+            if !S.intact[k,i]
+                force[1,i] += 0.0
+                force[2,i] += 0.0
+                force[3,i] += 0.0
             else
-                j = S.family[i,k]
-                E = [i,j]
-                E_ = [j,i]
-                Y = s_Y(E,y)
-                X = s_X(E,S.x)
+                j = S.family[k,i]::Int64
+                X[1],X[2],X[3] = S.x[1,j]-S.x[1,i],S.x[2,j]-S.x[2,i],S.x[3,j]-S.x[3,i]
+                Y[1],Y[2],Y[3] = y[1,j]-y[1,i],y[2,j]-y[2,i],y[3,j]-y[3,i]
                 e = (s_magnitude(Y) - s_magnitude(X))
+                xij = s_magnitude(X)::Float64
+                wij = influence_function(X)::Float64
+                wji = _influence_function(X)::Float64
                     if (e/s_magnitude(X))<S.critical_stretch
-                        M = Y./s_magnitude(Y)
-                        t = _tij(E,S.x,m,theta,e,K,G)
-                        t_ = _tij(E_,S.x,m,theta,e,K,G)
-                        force[i,:] += ((t + t_).*M)*S.volume[j]
+                        t = ( (((3*K-5*G)*(theta[i]*xij*wij/m[i]+theta[j]*xij*wji/m[j]) + 15*G*(e*wji/m[i]+e*wji/m[j]))) )*S.volume[j]/s_magnitude(Y)
+
+                        force[1,i] += t*Y[1]
+                        force[2,i] += t*Y[2]
+                        force[3,i] += t*Y[3]
                     else
-                        force[i,:] .+= [0,0,0]
-                        S.damage[i,k] = true
+                        force[1,i] += 0.0
+                        force[2,i] += 0.0
+                        force[3,i] += 0.0
+                        S.intact[k,i] = false
                     end
             end
         end
@@ -50,12 +58,11 @@ function s_force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
     return force
 end
 
-function _tij(E,x,m,theta,eij,K,G)
-    xij = s_magnitude(s_X(E,x))
-    wij = influence_function(s_X(E,x))
-    mi = m[E[1]]
-    thetai = theta[E[1]]
-    return (3*K-5*G)*(thetai*wij*xij)/mi + 15*G*wij*eij/mi
+
+function _tij(x,mi,thetai,eij,K,G)::Float64
+    xij = s_magnitude(x)::Float64
+    wij = influence_function(x)::Float64
+    return ((3*K-5*G)*(thetai*xij) + 15*G*eij)*wij/mi
 end
 
 

@@ -3,17 +3,19 @@ struct BondBasedSpecific
 end
 
 struct BondBasedMaterial<:PeridynamicsMaterial
-    general::Any
-    specific::Any
+    general::GeneralMaterial
+    specific::BondBasedSpecific
 end
 
 function s_force_density_T(mat::BondBasedMaterial)
     S = mat.general
     force = zeros(size(S.x)...)
-    for i in 1:size(S.x,1)
-        for j in 1:size(S.family,2)
-            if !S.damage[i,j]
-                force[i,:] .+= [0,0,0]
+    for i in 1:size(S.x,2)
+        for j in 1:size(S.family,1)
+            if !S.intact[j,i]
+                force[1,i] .+= 0.0
+                force[2,i] .+= 0.0
+                force[3,i] .+= 0.0
             else
             E = [i,S.family[i,j]]
             Y = s_Y(E,S.y)
@@ -22,10 +24,12 @@ function s_force_density_T(mat::BondBasedMaterial)
                 if e<S.critical_stretch
                     M = Y./s_magnitude(Y)
                     t = mat.specific.bond_stiffness*e
-                    force[i,:] .+= t.*M
+                    force[:,i] .+= t.*M
                 else
-                    force[i,:] .+= [0,0,0]
-                    S.damage[i,j] = true
+                    force[1,i] .+= 0.0
+                    force[2,i] .+= 0.0
+                    force[3,i] .+= 0.0
+                    S.intact[j,i] = false
                 end
             end
         end

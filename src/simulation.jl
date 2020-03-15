@@ -1,4 +1,4 @@
-mutable struct AbstractEnv
+mutable struct GeneralEnv
     id::Int64
     type::Array{Int64,1}
     ghost_atoms::Array{Int64,1}
@@ -28,7 +28,7 @@ function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2
     for mat in materials[2:end]
         v = hcat(v,mat.general.velocity)
     end
-    return AbstractEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials)
+    return GeneralEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials)
 end
 
 function set_ghost_atoms!(env,ghost_atoms)

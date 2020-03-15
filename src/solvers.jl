@@ -1,7 +1,8 @@
-function update_acc!(env::AbstractEnv)
-    env.f .*= 0
+function update_acc!(env::GeneralEnv)
+    fill!(env.f,0.0)
     for i in 1:size(env.material_blocks,1)
-        env.f[:,env.type.==env.material_blocks[i].type] .+= s_force_density_T(env.y[:,env.type.==env.material_blocks[i].type],env.material_blocks[i])/env.material_blocks[i].general.density
+        mask = env.type.==env.material_blocks[i].type
+        env.f[:,mask] .+= s_force_density_T(env.y[:,mask],env.material_blocks[i])/env.material_blocks[i].general.density
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
@@ -9,8 +10,7 @@ function update_acc!(env::AbstractEnv)
 end
 
 
-function velocity_verlet_step!(env::AbstractEnv)
-    update_acc!(env)
+function velocity_verlet_step!(env::GeneralEnv)
     c = env.dt/2
     env.v .+= c.*env.f
     env.y .+= env.dt.*env.v
@@ -23,7 +23,7 @@ function velocity_verlet_step!(env::AbstractEnv)
 end
 
 
-function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50)
+function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="datafile",start_at::Int64=0)
     mkpath("./output")
     print("\nUpdating neighbors for collision..................")
     for id in 1:size(envs,1)
@@ -33,19 +33,21 @@ function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50)
         end
     end
     print("Done\n")
-
-    for i in 1:N
+    N = N + start_at
+    for i in (1+start_at):N
         for id in 1:size(envs,1)
             if envs[id].state==2
                 velocity_verlet_step!(envs[id])
             end
         end
 
-        if i%freq1==0.0
+        if i%freq1==0.0 || i==1
+            print("\nWritting data file.......................")
             for id in 1:size(envs,1)
                 env = envs[id]
-                write_data(string("./output/datafile_env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
+                write_data(string("./output/",file_prefix,"_env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
             end
+            print("Done\n")
             print(i/N*100,"% over\n")
         end
 
