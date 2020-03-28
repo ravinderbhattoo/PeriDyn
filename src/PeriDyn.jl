@@ -1,5 +1,9 @@
 module PeriDyn
 
-greet() = print("Hello World!")
+export mysum
 
-end # module
+function mysum(a,b)
+    a+b
+end
+
+end

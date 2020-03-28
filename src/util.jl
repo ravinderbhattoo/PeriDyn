@@ -145,7 +145,7 @@ function write_data(filename,every,type,pos)
         for j in 1:size(y,1)
             t = type[j]
             a,b,c = y[j,:]
-            write(file, "$t $a, $b, $c ")
+            write(file, "$t, $a, $b, $c ")
             write(file,"\n")
         end
     end
@@ -159,7 +159,7 @@ function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2})
     for j in 1:size(y,2)
         t = type[j]
         a,b,c = y[1,j],y[2,j],y[3,j]
-        write(file, "$t $a, $b, $c ")
+        write(file, "$t, $a, $b, $c ")
         write(file,"\n")
     end
     close(file)
@@ -174,7 +174,7 @@ function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2}, v
         a,b,c = y[1,j],y[2,j],y[3,j]
         a1,b1,c1 = v[1,j],v[2,j],v[3,j]
         a2,b2,c2 = f[1,j],f[2,j],f[3,j]
-        write(file, "$t $a, $b, $c $a1, $b1, $c1 $a2, $b2, $c2 ")
+        write(file, "$t, $a, $b, $c, $a1, $b1, $c1, $a2, $b2, $c2 ")
         write(file,"\n")
     end
     close(file)
@@ -191,7 +191,7 @@ function write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
                 ids = cells[i1][i2][i3]
                 for j in 1:length(ids)
                     a,b,c = y[1,ids[j]],y[2,ids[j]],y[3,ids[j]]
-                    write(file, "$ind $a, $b, $c \n")
+                    write(file, "$ind, $a, $b, $c \n")
                 end
                 ind += 1
             end
