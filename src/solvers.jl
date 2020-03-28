@@ -101,6 +101,10 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
             end
         end
 
+        if env.Collect! != nothing
+            env.Collect!(env.Params,env.Out,i)
+        end
+
         if i%freq1==0.0 || i==1
             print_data_file!(envs,file_prefix,i)
             print(i/N*100,"% over\n")

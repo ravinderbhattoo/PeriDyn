@@ -12,6 +12,9 @@ mutable struct GeneralEnv
     boundary_conditions::Any
     short_range_repulsion::Any
     material_blocks::Any
+    Collect!::Any
+    Params::Any
+    Out::Any
 end
 
 
@@ -28,7 +31,7 @@ function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2
     for mat in materials[2:end]
         v = hcat(v,mat.general.velocity)
     end
-    return GeneralEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials)
+    return GeneralEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials,nothing,nothing,nothing)
 end
 
 function set_ghost_atoms!(env,ghost_atoms)
