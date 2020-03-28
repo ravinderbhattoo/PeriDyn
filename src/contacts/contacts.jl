@@ -1,6 +1,28 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
+
+"""
+    short_range_repulsion!(y,f,type,RepusionModel)
+
+Updates (inplace) the repulsive acceleration of material points.
+
+**`1-1 repulsion`**
+
+# Input Args:
+- `y :: Positions of material point`
+- `f :: Acceleration of material points`
+- `type :: Type of material points`
+- `RepulsionModel :: Repulsion model (see contacts.jl for more details)`
+
+# Output Args:
+- `Noting (Inplace updation of f (acceleration))`
+
+# Examples
+```jldoctest
+julia> short_range_repulsion!(y,f,type,RepusionModel)
+```
+"""
 function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
     mask1 = type.==RM.pair[1]
     mask2 = type.==RM.pair[2]
@@ -15,6 +37,7 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
                 f1[:,i] .+= -repulsion_acc(x1[:,i].-x2[:,j],1,RM)
                 f2[:,j] .+= repulsion_acc(x1[:,i].-x2[:,j],2,RM)
             end
+            if j==0 break end
         end
     end
     f[:,mask1] = f1
@@ -23,6 +46,27 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
 end
 
 
+"""
+    short_range_repulsion!(y,f,type,RepusionModel)
+
+Updates (inplace) the repulsive acceleration of material points.
+
+**`1-2 repulsion`**
+
+# Input Args:
+- `y :: Positions of material point`
+- `f :: Acceleration of material points`
+- `type :: Type of material points`
+- `RepulsionModel :: Repulsion model (see contacts.jl for more details)`
+
+# Output Args:
+- `Noting (Inplace updation of f (acceleration))`
+
+# Examples
+```jldoctest
+julia> short_range_repulsion!(y,f,type,RepusionModel)
+```
+"""
 function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
     mask1 = type.==RM.type
     f1 = f[:,mask1]
@@ -34,6 +78,7 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
                 f1[:,i] .+= -repulsion_acc(x1[:,i].-x1[:,j],RM)
                 f1[:,j] .+= repulsion_acc(x1[:,i].-x1[:,j],RM)
             end
+            if j==0 break end
         end
     end
     f[:,mask1] = f1
@@ -41,54 +86,105 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
 end
 
 
+"""
+    collision_box(x1::Array{Float64,2}, x2::Array{Float64,2}, skin::Float64)
+
+Calculates collsion box between two material blocks.
+
+# Input Args:
+- `x1 :: Positions of material point (block 1)`
+- `x2 :: Positions of material point (block 2)`
+- `skin :: Extra distance need to consider (usually >= particle size)`
+
+# Output Args:
+- `box_min :: Minimum position limits for overlap`
+- `box_max :: Miximum position limits for overlap`
+- `ifoverlap :: Boolean (true if overlap)`
+
+# Examples
+```jldoctest
+julia> collision_box(x1, x2, skin)
+```
+"""
+function collision_box(x1::Array{Float64,2}, x2::Array{Float64,2}, skin::Float64)
+    min1 = minimum(x1,dims=2).-skin
+    min2 = minimum(x2,dims=2).-skin
+    max1 = maximum(x1,dims=2).+skin
+    max2 = maximum(x2,dims=2).+skin
+    box_min = max.(min1,min2)
+    box_max = min.(max1,max2)
+    vol = prod(box_max-box_min)
+    if vol<0.0
+        return box_min, box_max, false
+    else
+        return box_min, box_max, true
+    end
+end
+
 function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
-    x1 = y[:,type.==RM.pair[1]]
-    x2 = y[:,type.==RM.pair[2]]
-    family = zeros(Float64,size(x2,2),size(x1,2))
-    for i in 1:size(x1,2)
-        a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
-        for j in 1:size(x2,2)
-            a2,b2,c2 = x2[1,j],x2[2,j],x2[3,j]
-            if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)>RM.distance^2
-            else
-                family[j,i] = j
+    x11 = y[:,type.==RM.pair[1]]
+    x22 = y[:,type.==RM.pair[2]]
+    box_min, box_max, ifcheck = collision_box(x11, x22, RM.distance)
+    if ifcheck
+        mask1 = reshape(prod(x11.>box_min,dims=1) .* prod(x11.<box_max,dims=1),:)
+        mask2 = reshape(prod(x22.>box_min,dims=1) .* prod(x22.<box_max,dims=1),:)
+        x1 = x11[1:end,mask1]
+        x2 = x22[1:end,mask2]
+        a_id = collect(1:size(x22,2))[mask2]
+        family = zeros(Float64, max(RM.max_neighs,size(x2,2)),size(x1,2))
+        for i in 1:size(x1,2)
+            a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
+            for j in 1:size(x2,2)
+                a2,b2,c2 = x2[1,j],x2[2,j],x2[3,j]
+                if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)>RM.distance^2
+                else
+                    family[j,i] = a_id[j]
+                end
             end
         end
+        family = sort(family,dims=1)
+        RM.neighs[1:end,mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
+    else
+        RM.neighs[1:end,1:end] = 0
     end
-    family = sort(family,dims=1)
-    RM.neighs[1:end,1:end] = family[end:-1:end+1-RM.max_neighs,1:end]
-
 end
 
 function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
-    x1 = y[:,type.==RM.type]
-    skip = false::Bool
-    family = zeros(Float64,size(x1,2),size(x1,2))
-    for i in 1:size(x1,2)
-        a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
-        for j in (1+i):size(x1,2)
-            skip = false
-            for k in 1:size(RM.material.intact,1)
-                if RM.material.intact[k,i]
-                    if RM.material.family[k,i]==j
-                        skip=true
+    x = y[:,type.==RM.type]
+    fill!(RM.neighs,0)
+    cells, cell_neighs = get_cells(x,RM.distance)
+    for cell_i in 1:length(cells)
+        for ca_id in 1:length(cells[cell_i])
+            ind = 1
+            ca = cells[cell_i][ca_id]
+            a1,b1,c1 = x[1,ca],x[2,ca],x[3,ca]
+            for neigh_id in 1:length(cell_neighs[cell_i])
+                neighs = cell_neighs[cell_i][neigh_id]
+                for fa_id in 1:length(cells[neighs])
+                    fa = cells[neighs][fa_id]
+                    noskip = true
+                    for k in 1:size(RM.material.family,1)
+                        if fa < RM.material.family[k,ca]
+                            break
+                        end
+                        if fa==RM.material.family[k,ca]
+                            if RM.material.intact[k,ca]
+                                noskip = false
+                            end
+                            break
+                        end
                     end
-                end
-            end
-            if skip
-            else
-                a2,b2,c2 = x1[1,j],x1[2,j],x1[3,j]
-                if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)>RM.distance^2
-                else
-                    family[j,i] = j
-                    family[i,j] = i
+                    if noskip
+                        a2,b2,c2 = x[1,fa], x[2,fa], x[3,fa]
+                        if 1e-4<((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))<RM.distance^2
+                            RM.neighs[ind,ca] = fa
+                            ind += 1
+                        end
+                    end
                 end
             end
         end
     end
-    family = sort(family,dims=1)
-    RM.neighs[1:end,1:end] = family[end:-1:end+1-RM.max_neighs,1:end]
-
 end
 
 #

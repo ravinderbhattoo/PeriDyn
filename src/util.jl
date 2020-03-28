@@ -15,7 +15,7 @@ function _influence_function(dr)
     return 1/s_magnitude(dr)
 end
 
-function dilatation(y,S::AbstractMaterial,m::Array{Float64,1})
+function dilatation(y,S::GeneralMaterial,m::Array{Float64,1})
     """
     Calculates dilatation for a point.
     Args
@@ -45,7 +45,7 @@ function dilatation(y,S::AbstractMaterial,m::Array{Float64,1})
 end
 
 
-function weighted_volume(S::AbstractMaterial)
+function weighted_volume(S::GeneralMaterial)
     m = 0*S.volume::Array{Float64,1}
     dr = zeros(3)::Array{Float64,1}
     j = 0::Int64
@@ -64,21 +64,75 @@ function weighted_volume(S::AbstractMaterial)
 end
 
 
-
-function cal_family(x::Array{Float64,2},horizon::Float64, max_neigh::Int64)::Array{Float64,2}
-    family = zeros(Int64,size(x,2),size(x,2))
-    for i in 1:size(x,2)
-        a1,b1,c1 = x[1,i],x[2,i],x[3,i]
-        for j in (i+1):size(x,2)
-            a2,b2,c2 = x[1,j],x[2,j],x[3,j]
-            if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)<horizon^2
-                family[i,j] = i
-                family[j,i] = j
+function neigh_cells(i,j,k,N)
+    a = Vector{Int}()
+    for kk in k-1:k+1
+        for jj in j-1:j+1
+            for ii in i-1:i+1
+                if (0<ii*jj*kk) && (ii<=N[1]) && (jj<=N[2]) && (kk<=N[3])
+                    push!(a,cell_number(ii,jj,kk,N))
+                end
             end
         end
     end
-    family = sort(family,dims=1)
-    return family[end:-1:end+1-min(size(x,2),max_neigh),1:end]
+    return a
+end
+
+
+function cell_number(i,j,k,N)
+    return i+(j-1)*N[1]+(k-1)*N[1]*N[2]
+end
+
+
+function get_cells(x::Array{Float64,2},horizon::Float64)
+    _min = minimum(x,dims=2)
+    _max = maximum(x,dims=2)
+    N = Int.(1 .+ floor.((_max-_min)/horizon))
+    cells = [Vector{Int}() for i in 1:prod(N)]
+    cell_neighs = Vector{Vector{Int}}(undef,prod(N))
+    for k in 1:N[3]
+        for j in 1:N[2]
+            for i in 1:N[1]
+                cell_neighs[cell_number(i,j,k,N)] = neigh_cells(i,j,k,N)
+            end
+        end
+    end
+    for i in 1:size(x,2)
+        ii,jj,kk = Int.(1 .+ floor.((x[:,i].-_min)/horizon))
+        push!(cells[cell_number(ii,jj,kk,N)],i)
+    end
+    return cells, cell_neighs
+end
+
+
+function cal_family!(family::Array{Int64,2},x::Array{Float64,2}, horizon::Float64)
+
+    cells, cell_neighs = get_cells(x,horizon)
+    for cell_i in 1:length(cells)
+        for ca_id in 1:length(cells[cell_i])
+            ind = 1
+            ca = cells[cell_i][ca_id]
+            a1,b1,c1 = x[1,ca],x[2,ca],x[3,ca]
+            for neigh_id in 1:length(cell_neighs[cell_i])
+                neighs = cell_neighs[cell_i][neigh_id]
+                for fa_id in 1:length(cells[neighs])
+                    fa = cells[neighs][fa_id]
+                    a2,b2,c2 = x[1,fa], x[2,fa], x[3,fa]
+                    if 1e-4<((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))<horizon^2
+                        family[ind,ca] = fa
+                        ind += 1
+                    end
+                end
+            end
+        end
+    end
+    sort!(family,dims=1)
+end
+
+function cal_family(x::Array{Float64,2}, horizon::Float64, max_neigh::Int64)::Array{Int64,2}
+    family = zeros(Int64,max_neigh,size(x,2))
+    cal_family!(family,x,horizon)
+    return family
 end
 
 
@@ -122,6 +176,26 @@ function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2}, v
         a2,b2,c2 = f[1,j],f[2,j],f[3,j]
         write(file, "$t $a, $b, $c $a1, $b1, $c1 $a2, $b2, $c2 ")
         write(file,"\n")
+    end
+    close(file)
+end
+
+function write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
+    file = open(filename, "w+")
+    N = size(y,2)
+    write(file, "$N \n\n")
+    ind = 1
+    for i1 in 1:length(cells)
+        for i2 in 1:length(cells[i1])
+            for i3 in 1:length(cells[i1][i2])
+                ids = cells[i1][i2][i3]
+                for j in 1:length(ids)
+                    a,b,c = y[1,ids[j]],y[2,ids[j]],y[3,ids[j]]
+                    write(file, "$ind $a, $b, $c \n")
+                end
+                ind += 1
+            end
+        end
     end
     close(file)
 end

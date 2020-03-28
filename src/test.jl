@@ -1,5 +1,5 @@
 using Profile
-
+using BenchmarkTools
 
 include("./mesh.jl")
 include("./simulation.jl")
@@ -10,46 +10,35 @@ include("./materials/ordinary_state_based.jl")
 include("./contacts/contacts.jl")
 include("./contacts/simple.jl")
 include("./util.jl")
-include("./solvers.jl")
 include("./global_bc.jl")
+include("./solvers.jl")
 
-x1 = create_block([1.0,1,1],[20,10,10])
+x1 = create_block([1.0,1,1],[40,20,10])
+notch_mask = (19 .< x1[1,:] .< 23) .& ((x1[2,:].<6) .| (x1[2,:].>15))
+x1 = x1[:,.~notch_mask]
+
 v1 = x1*0
 y1 = 1x1
 
-mat_gen1 = Material(y1,v1,x1,x1[1,:]*0 .+ 1, 1000.0, 3.1, 0.5, max_neigh=200)
+mat_gen1 = GeneralMaterial(y1,v1,x1,x1[1,:]*0 .+ 1, 1000.0, 3.0, 0.5, max_neigh=200)
 mat_spec1 = OrdinaryStateBasedSpecific(10.0,10.0,mat_gen1)
 block1 = OrdinaryStateBasedMaterial(1,mat_gen1,mat_spec1)
 
-bool1 = y1[1,:].<4
-bool2 = y1[1,:].>17
+bool1 = y1[1,:].<10
+bool2 = y1[1,:].>30
 BC1 = Move_BC(1,bool1,[0.0,0,0],1y1[:,bool1])
-BC2 = Move_BC(1,bool2,[0.01,0,0],1y1[:,bool2])
-
-# x2 = create_block([1.0,1,1],[10,10,10])
-# x2[1,:] .+= 10.5
-# v2 = x2*0
-# v2[1,:] .-= 0.01
-# y2 = 1x2
-#
-# mat_gen2 = Material(y2,v2,x2,x2[1,:]*0 .+ 1, 1000.0, 3.1, 0.5, max_neigh=100)
-# mat_spec2 = OrdinaryStateBasedSpecific(10.0,10.0,mat_gen2)
-# block2 = OrdinaryStateBasedMaterial(2,mat_gen2,mat_spec2)
-#
+BC2 = Move_BC(1,bool2,[.5,0,0],1y1[:,bool2])
 
 
-# RM = SimpleRepulsionModel(2.0,1000.0,block1,block2,distanceX=2)
-RM1 = SimpleRepulsionModel(2.0,1.0,block1,distanceX=2)
-# RM2 = SimpleRepulsionModel(2.0,1.0,block2,distanceX=2)
+lazzy_mask = (40 .< x1[1,:] .< 60)
+RM1 = SimpleRepulsionModel(2.0,1.0,block1,distanceX=3,max_neighs=200,)
+
+env =  Env(1,[block1],[RM1],[BC1,BC2],1)
 
 
+quasi_static!([env],50,10.0,freq1=1,freq2=1,file_prefix="minimize",start_at=0)
 
-env =  Env(1,[block1],[RM1],[BC1,BC2],0.2)
 
-
-#set_env_inactive!(env2)
-
-velocity_verlet!([env],6000,freq1=20,freq2=100)
 
 
 

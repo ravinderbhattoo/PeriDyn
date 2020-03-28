@@ -11,7 +11,7 @@ end
 
 struct SimpleRepulsionModel11<:RepulsionModel11
     type::Int64
-    material::AbstractMaterial
+    material::GeneralMaterial
     alpha::Float64
     epsilon::Float64
     neighs::Array{Int64,2}

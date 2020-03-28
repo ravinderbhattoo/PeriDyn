@@ -2,6 +2,8 @@
 Peridynamics implementation in Julia.
 
 
+![plate_block](/resources/plate_block.gif)
+
 ## Contributions
 - [Ravinder Bhattoo](https://github.com/ravinderbhattoo)
 
