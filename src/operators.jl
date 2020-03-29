@@ -13,11 +13,8 @@ function s_magnitude(x::Array{Float64,1})
 end
 
 
-function s_X(E,x)
-    return x[:,E[2]] .- x[:,E[1]]
+function s_X(j::Int64,i::Int64,x::Array{Float64,2})
+    return x[:,j] .- x[:,i]
 end
 
-function s_Y(E,y)
-    return y[:,E[2]] .- y[:,E[1]]
-end
 #

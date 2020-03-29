@@ -4,9 +4,10 @@ struct OrdinaryStateBasedSpecific
     weighted_volume::Array{Float64,1}
 end
 
-function OrdinaryStateBasedSpecific(bulk_modulus, shear_modulus, mat_gen)
+
+function OrdinaryStateBasedSpecific(bulk_modulus::Float64, shear_modulus::Float64, mat_gen::GeneralMaterial)
     m = weighted_volume(mat_gen)
-    return OrdinaryStateBasedSpecific(bulk_modulus, shear_modulus,m)
+    return OrdinaryStateBasedSpecific(bulk_modulus, shear_modulus, m)
 end
 
 

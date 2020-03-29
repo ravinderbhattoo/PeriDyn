@@ -15,13 +15,12 @@ function _influence_function(dr)
     return 1/s_magnitude(dr)
 end
 
-function dilatation(y,S::GeneralMaterial,m::Array{Float64,1})
-    """
-    Calculates dilatation for a point.
-    Args
-        y_i,x_i,info_i,m_i,V,x,y
-    """
-    theta = 0*S.volume::Array{Float64}
+function dilatation(y::Array{Float64,2},S::GeneralMaterial,m::Array{Float64,1})
+    return 3*dilatation_theta(y,S)./m
+end
+
+function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
+    theta = zeros(Float64,size(S.volume)...)
     j = 1::Int64
     E_n = 0.0::Float64
     E = 0.0::Float64
@@ -32,16 +31,16 @@ function dilatation(y,S::GeneralMaterial,m::Array{Float64,1})
             if S.intact[k,i]
                 j = S.family[k,i]
                 if (j>0) & (i!=j)
-                    x[1],x[2],x[3] = S.x[1,j]-S.x[1,i],S.x[2,j]-S.x[2,i],S.x[3,j]-S.x[3,i]
-                    E_n = sqrt((y[1,j]-y[1,i])^2 + (y[2,j]-y[2,i])^2 + (y[3,j]-y[3,i])^2)
-                    E = sqrt((S.x[1,j]-S.x[1,i])^2 + (S.x[2,j]-S.x[2,i])^2 + (S.x[3,j]-S.x[3,i])^2)
+                    x = s_X(j,i,S.x)
+                    E = s_magnitude(x)
+                    E_n = s_magnitude(s_X(j,i,y))
                     e = E_n - E
                     theta[i] += influence_function(x)*E*e*S.volume[j] *horizon_correction(x,S.particle_size,S.horizon)
                 end
             end
         end
     end
-    return 3*theta./m
+    return theta
 end
 
 

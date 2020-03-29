@@ -96,14 +96,14 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
     for i in (1+start_at):N
         for id in 1:size(envs,1)
             if envs[id].state==2
-                fill!(env.v,0.0)
+                fill!(envs[id].v,0.0)
                 minimize!(envs[id],step_size)
+            end
+            if envs[id].Collect! != nothing
+                envs[id].Collect!(envs[id].Params,envs[id].Out,i)
             end
         end
 
-        if env.Collect! != nothing
-            env.Collect!(env.Params,env.Out,i)
-        end
 
         if i%freq1==0.0 || i==1
             print_data_file!(envs,file_prefix,i)
