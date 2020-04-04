@@ -17,9 +17,9 @@ function s_force_density_T(mat::BondBasedMaterial)
                 force[2,i] .+= 0.0
                 force[3,i] .+= 0.0
             else
-            E = [i,S.family[i,j]]
-            Y = s_Y(E,S.y)
-            X = s_X(E,S.x)
+            E = [S.family[i,j],i]
+            Y = s_X(E...,S.y)
+            X = s_X(E...,S.x)
             e = (s_magnitude(Y) - s_magnitude(X))/s_magnitude(X)
                 if e<S.critical_stretch
                     M = Y./s_magnitude(Y)
