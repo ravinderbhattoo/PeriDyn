@@ -1,3 +1,8 @@
+"""
+    update_acc!(env::GeneralEnv)
+
+Updates acceleration of all the material points in a simulation environment.
+"""
 function update_acc!(env::GeneralEnv)
     fill!(env.f,0.0)
     for i in 1:size(env.material_blocks,1)
@@ -9,7 +14,11 @@ function update_acc!(env::GeneralEnv)
     end
 end
 
+"""
+    velocity_verlet_step!(env::GeneralEnv)
 
+Implement a single step of velocity verlet algorithm.
+"""
 function velocity_verlet_step!(env::GeneralEnv)
     c = env.dt/2
     env.v .+= c.*env.f
@@ -22,7 +31,11 @@ function velocity_verlet_step!(env::GeneralEnv)
     env.time_step += 1
 end
 
+"""
+    velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="datafile",start_at::Int64=0)
 
+Velocity verlet :).
+"""
 function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="datafile",start_at::Int64=0)
     mkpath("./output")
     print("\nUpdating neighbors for collision..................")
@@ -65,7 +78,11 @@ function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="data
     end
 end
 
+"""
+    minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_step_tol_per::Float64=5.0)
 
+Minimize potential energy of simulation environment.
+"""
 function minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_step_tol_per::Float64=5.0)
     ref_particle_size = env.material_blocks[1].general.particle_size
     orig_step_size = step_size
@@ -88,7 +105,11 @@ function minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_s
     env.time_step += 1
 end
 
+"""
+    quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, freq1::Int64=10, freq2::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
 
+Implements quasi static simulation using minimize for each step.
+"""
 function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, freq1::Int64=10, freq2::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
     mkpath("./output")
     update_neighs!(envs)
@@ -116,6 +137,12 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
     end
 end
 
+
+"""
+    function update_neighs!(envs)
+
+Updates neighbors of each material point for a list of simulation environments.
+"""
 function update_neighs!(envs)
     print("\nUpdating neighbors for collision..................")
     for env in envs
@@ -128,7 +155,11 @@ function update_neighs!(envs)
     print("Done\n")
 end
 
+"""
+    print_data_file!(envs::Array{GeneralEnv}, file_prefix::String,i::Int64)
 
+Writes data file to disk.
+"""
 function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String,i::Int64)
     print("\nWritting data file................................")
     for id in 1:size(envs,1)

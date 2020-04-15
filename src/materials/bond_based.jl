@@ -1,12 +1,25 @@
+"""
+Specific bond based material type.
+"""
 struct BondBasedSpecific
     bond_stiffness::Float64
 end
 
+"""
+Bond based material type.
+"""
 struct BondBasedMaterial<:PeridynamicsMaterial
+    type::Int64
     general::GeneralMaterial
     specific::BondBasedSpecific
 end
 
+
+"""
+    s_force_density_T(mat::BondBasedMaterial)
+
+Calculates force density (actually acceleration) for bond based material type.
+"""
 function s_force_density_T(mat::BondBasedMaterial)
     S = mat.general
     force = zeros(size(S.x)...)

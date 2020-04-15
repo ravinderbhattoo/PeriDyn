@@ -1,10 +1,16 @@
+"""
+Specific ordinary state based materail type.
+"""
 struct OrdinaryStateBasedSpecific
     bulk_modulus::Float64
     shear_modulus::Float64
     weighted_volume::Array{Float64,1}
 end
 
-
+"""
+    OrdinaryStateBasedSpecific(bulk_modulus::Float64, shear_modulus::Float64, mat_gen::GeneralMaterial)
+Specific ordinary state based materail type.
+"""
 function OrdinaryStateBasedSpecific(bulk_modulus::Float64, shear_modulus::Float64, mat_gen::GeneralMaterial)
     m = weighted_volume(mat_gen)
     return OrdinaryStateBasedSpecific(bulk_modulus, shear_modulus, m)
@@ -17,7 +23,11 @@ struct OrdinaryStateBasedMaterial<:PeridynamicsMaterial
     specific::OrdinaryStateBasedSpecific
 end
 
+"""
+    s_force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
 
+Calculates force density (actually acceleration) for ordinary state based material type.
+"""
 function s_force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
     force = zeros(size(y))
     X = Float64[1.0,0.0,0.0]
@@ -60,6 +70,11 @@ function s_force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
 end
 
 
+"""
+    _tij(x,mi,thetai,eij,K,G)::Float64
+
+calculates tij force density magnitude (actually acceleration).
+"""
 function _tij(x,mi,thetai,eij,K,G)::Float64
     xij = s_magnitude(x)::Float64
     wij = influence_function(x)::Float64
