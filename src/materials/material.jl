@@ -1,3 +1,10 @@
+"""
+This module contain definition of Peridynamics material type.
+"""
+
+"""
+Abstract PeridynamicsMaterial type.
+"""
 abstract type PeridynamicsMaterial end
 
 struct GeneralMaterial
@@ -13,6 +20,12 @@ struct GeneralMaterial
     intact::BitArray{2}
 end
 
+
+"""
+    GeneralMaterial(y0,v0,x,volume,density,horizon,critical_stretch; particle_size=0,max_neigh=50)
+
+General peridynamics material type.
+"""
 function GeneralMaterial(y0,v0,x,volume,density,horizon,critical_stretch; particle_size=0,max_neigh=50)
     family = cal_family(x,horizon,max_neigh)
     intact = family.>0.5

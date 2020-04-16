@@ -1,4 +1,12 @@
+"""
+This modules contains the boundary conditions definitions.
+"""
+
+"""
+Abstract class for boundary conditions.
+"""
 abstract type BoundaryCondition end
+
 
 struct FixBC<:BoundaryCondition
     blockID::Int64
@@ -6,6 +14,11 @@ struct FixBC<:BoundaryCondition
     start::Array{Float64,2}
 end
 
+"""
+    apply_bc!(env,BC::FixBC)
+
+Applies fixed boundary condition to a given material block.
+"""
 function apply_bc!(env,BC::FixBC)
     y1 = env.y[:,env.type.==BC.blockID]
     y1[1,BC.bool] = BC.start[1,:]
@@ -21,6 +34,11 @@ struct MoveBC<:BoundaryCondition
     start::Array{Float64,2}
 end
 
+"""
+    apply_bc!(env,BC::MoveBC)
+
+Applies moving boundary condition to a given material block. Material will move with the given rate (constant velocity).
+"""
 function apply_bc!(env,BC::MoveBC)
     y1 = env.y[:,env.type.==BC.blockID]
     y1[1,BC.bool] = BC.start[1,:] .+ env.time_step*env.dt*BC.rate[1]
@@ -42,6 +60,11 @@ function ScaleBC(blockID,bool,rate,FixPoint)
     ScaleBC(blockID,bool,rate,FixPoint,LastTimeStep)
 end
 
+"""
+    apply_bc!(env,BC::ScaleBC)
+
+It scales a given material block about a given fixed point.
+"""
 function apply_bc!(env,BC::ScaleBC)
     if BC.LastTimeStep[1]==env.time_step
     else
@@ -68,6 +91,12 @@ function JustScaleBC(blockID,bool,rate,start,FixPoint)
     JustScaleBC(blockID,bool,rate,start,FixPoint,LastTimeStep)
 end
 
+
+"""
+    apply_bc!(env,BC::JustScaleBC)
+
+It scales a given material block about a given fixed point.
+"""
 function apply_bc!(env,BC::JustScaleBC)
     if BC.LastTimeStep[1]==env.time_step
     else
@@ -95,6 +124,11 @@ function ScaleFixBC(blockID,bool,m,Fixbool)
     ScaleFixBC(blockID,bool,m,Fixbool,Fix,LastTimeStep)
 end
 
+"""
+    apply_bc!(env,BC::ScaleFixBC)
+    
+It scales as well as fix a given material block. (like scale and fix edges, helpful in tensile quasi-static simulations.)
+"""
 function apply_bc!(env,BC::ScaleFixBC)
     if BC.LastTimeStep[1]==env.time_step
     else

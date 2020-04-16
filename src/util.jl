@@ -1,3 +1,8 @@
+"""
+    horizon_correction(dr,r,hr)
+
+It gives horizon correction factor (It will give 1 as of now).
+"""
 function horizon_correction(dr,r,hr)
     """
     Horizon correction for perdynamic model.
@@ -7,6 +12,11 @@ function horizon_correction(dr,r,hr)
     return 1
 end
 
+"""
+    influence_function(dr)
+
+It gives influence function factor (It will give 1/r as of now).
+"""
 function influence_function(dr)
     return 1/s_magnitude(dr)
 end
@@ -15,10 +25,20 @@ function _influence_function(dr)
     return 1/s_magnitude(dr)
 end
 
+"""
+    dilatation(y::Array{Float64,2},S::GeneralMaterial,m::Array{Float64,1})
+
+It gives dilatation as given ordinary state material model.
+"""
 function dilatation(y::Array{Float64,2},S::GeneralMaterial,m::Array{Float64,1})
     return 3*dilatation_theta(y,S)./m
 end
 
+"""
+    dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
+
+It gives dilatation(theta) as given ordinary state material model.
+"""
 function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
     theta = zeros(Float64,size(S.volume)...)
     j = 1::Int64
@@ -44,6 +64,11 @@ function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
 end
 
 
+"""
+    weighted_volume(S::GeneralMaterial)
+
+It gives weighted volume.
+"""
 function weighted_volume(S::GeneralMaterial)
     m = 0*S.volume::Array{Float64,1}
     dr = zeros(3)::Array{Float64,1}
@@ -63,6 +88,11 @@ function weighted_volume(S::GeneralMaterial)
 end
 
 
+"""
+    neigh_cells(i,j,k,N)
+
+Calculate all neighboring cells for i,j,k cell.
+"""
 function neigh_cells(i,j,k,N)
     a = Vector{Int}()
     for kk in k-1:k+1
@@ -77,12 +107,20 @@ function neigh_cells(i,j,k,N)
     return a
 end
 
+"""
+    cell_number(i,j,k,N)
 
+Calculates cell number for given i,j,k cell indices (when in a list).
+"""
 function cell_number(i,j,k,N)
     return i+(j-1)*N[1]+(k-1)*N[1]*N[2]
 end
 
+"""
+    get_cells(x::Array{Float64,2},horizon::Float64)
 
+Fill cells with material points.
+"""
 function get_cells(x::Array{Float64,2},horizon::Float64)
     _min = minimum(x,dims=2)
     _max = maximum(x,dims=2)
@@ -104,6 +142,11 @@ function get_cells(x::Array{Float64,2},horizon::Float64)
 end
 
 
+"""
+    cal_family!(family::Array{Int64,2},x::Array{Float64,2}, horizon::Float64)
+
+Calculate family members for each material point (inplace).
+"""
 function cal_family!(family::Array{Int64,2},x::Array{Float64,2}, horizon::Float64)
 
     cells, cell_neighs = get_cells(x,horizon)
@@ -128,13 +171,23 @@ function cal_family!(family::Array{Int64,2},x::Array{Float64,2}, horizon::Float6
     sort!(family,dims=1)
 end
 
+
+"""
+    cal_family!(family::Array{Int64,2},x::Array{Float64,2}, horizon::Float64)
+
+Calculate family members for each material point.
+"""
 function cal_family(x::Array{Float64,2}, horizon::Float64, max_neigh::Int64)::Array{Int64,2}
     family = zeros(Int64,max_neigh,size(x,2))
     cal_family!(family,x,horizon)
     return family
 end
 
+"""
+    write_data(filename,every,type,pos)
 
+It writes the data file.
+"""
 function write_data(filename,every,type,pos)
     file = open(filename, "w+")
     for i in 1:every:size(pos,3)
@@ -151,6 +204,11 @@ function write_data(filename,every,type,pos)
     close(file)
 end
 
+"""
+    write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2})
+
+It writes the data file.
+"""
 function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2})
     file = open(filename, "w+")
     N = size(y,2)
@@ -164,6 +222,12 @@ function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2})
     close(file)
 end
 
+
+"""
+    write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2}, v::Array{Float64,2},f::Array{Float64,2},)
+
+It writes the data file.
+"""
 function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2}, v::Array{Float64,2},f::Array{Float64,2},)
     file = open(filename, "w+")
     N = size(y,2)
@@ -179,6 +243,12 @@ function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2}, v
     close(file)
 end
 
+
+"""
+    write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
+
+It writes the data file.
+"""
 function write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
     file = open(filename, "w+")
     N = size(y,2)
