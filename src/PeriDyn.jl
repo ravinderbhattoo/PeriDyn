@@ -17,4 +17,6 @@ include("./util.jl") # utility functions
 include("./global_bc.jl") # boundary condition functions
 include("./solvers.jl") # All implemented solvers
 
+include("./testtools.jl") # only for testing
+
 end
