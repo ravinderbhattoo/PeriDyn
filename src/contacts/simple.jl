@@ -51,11 +51,11 @@ end
 Calculates repulsive acceleration for 1-2 materials block interaction.
 """
 function repulsion_acc(dr,den_i,RepMod::SimpleRepulsionModel12)
-    del_x = RepMod.equi_dist - s_magnitude(dr)
+    del_x = RepMod.equi_dist - magnitude(dr)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -(RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr/s_magnitude(dr)/RepMod.densities[den_i]
+        return -(RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr/magnitude(dr)/RepMod.densities[den_i]
     end
 end
 
@@ -66,10 +66,10 @@ end
 Calculates repulsive acceleration for 1-1 materials block interaction.
 """
 function repulsion_acc(dr,RepMod::SimpleRepulsionModel11)
-    del_x = -1+RepMod.material.particle_size/s_magnitude(dr)
+    del_x = -1+RepMod.material.particle_size/magnitude(dr)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -(RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr/s_magnitude(dr)/RepMod.material.density
+        return -(RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr/RepMod.material.density
     end
 end

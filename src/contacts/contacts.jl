@@ -77,8 +77,8 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -repulsion_acc(x1[:,i].-x1[:,j],RM)
-                f1[:,j] .+= repulsion_acc(x1[:,i].-x1[:,j],RM)
+                f1[:,i] .+= -0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
+                f1[:,j] .+= 0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
             end
             if j==0 break end
         end

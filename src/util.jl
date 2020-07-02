@@ -18,11 +18,7 @@ end
 It gives influence function factor (It will give 1/r as of now).
 """
 function influence_function(dr)
-    return 1/s_magnitude(dr)
-end
-
-function _influence_function(dr)
-    return 1/s_magnitude(dr)
+    return 1/magnitude(dr)
 end
 
 """
@@ -51,9 +47,9 @@ function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
             if S.intact[k,i]
                 j = S.family[k,i]
                 if (j>0) & (i!=j)
-                    x = s_X(j,i,S.x)
-                    E = s_magnitude(x)
-                    E_n = s_magnitude(s_X(j,i,y))
+                    x = Xij(j,i,S.x)
+                    E = magnitude(x)
+                    E_n = magnitude(Xij(j,i,y))
                     e = E_n - E
                     theta[i] += influence_function(x)*E*e*S.volume[j] *horizon_correction(x,S.particle_size,S.horizon)
                 end
@@ -80,7 +76,7 @@ function weighted_volume(S::GeneralMaterial)
                 dr[1] = S.x[1,j]-S.x[1,i]
                 dr[2] = S.x[2,j]-S.x[2,i]
                 dr[3] = S.x[3,j]-S.x[3,i]
-                m[i] += influence_function(dr)*s_magnitude(dr)^2*horizon_correction(dr,S.particle_size,S.horizon)*S.volume[j]
+                m[i] += influence_function(dr)*magnitude(dr)^2*horizon_correction(dr,S.particle_size,S.horizon)*S.volume[j]
             end
         end
     end
@@ -178,6 +174,7 @@ end
 Calculate family members for each material point.
 """
 function cal_family(x::Array{Float64,2}, horizon::Float64, max_neigh::Int64)::Array{Int64,2}
+    max_neigh = min(max_neigh,size(x,2))
     family = zeros(Int64,max_neigh,size(x,2))
     cal_family!(family,x,horizon)
     return family

@@ -35,5 +35,5 @@ function GeneralMaterial(y0,v0,x,volume,density,horizon,critical_stretch; partic
     if particle_size==0
         particle_size = volume[1]^(1/3)
     end
-    return deepcopy(GeneralMaterial(y0,v0,x,particle_size,volume,density, horizon,critical_stretch,family,intact))
+    return GeneralMaterial(y0,v0,x,particle_size,volume,density, horizon,critical_stretch,family,intact)
 end

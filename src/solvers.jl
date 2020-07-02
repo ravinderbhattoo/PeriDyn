@@ -7,7 +7,7 @@ function update_acc!(env::GeneralEnv)
     fill!(env.f,0.0)
     for i in 1:size(env.material_blocks,1)
         mask = env.type.==env.material_blocks[i].type
-        env.f[:,mask] .+= s_force_density_T(env.y[:,mask],env.material_blocks[i])/env.material_blocks[i].general.density
+        env.f[:,mask] .+= force_density_T(env.y[:,mask],env.material_blocks[i])/env.material_blocks[i].general.density
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
