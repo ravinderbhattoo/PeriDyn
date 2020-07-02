@@ -47,9 +47,9 @@ function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
             if S.intact[k,i]
                 j = S.family[k,i]
                 if (j>0) & (i!=j)
-                    x = X(j,i,S.x)
+                    x = Xij(j,i,S.x)
                     E = magnitude(x)
-                    E_n = magnitude(X(j,i,y))
+                    E_n = magnitude(Xij(j,i,y))
                     e = E_n - E
                     theta[i] += influence_function(x)*E*e*S.volume[j] *horizon_correction(x,S.particle_size,S.horizon)
                 end

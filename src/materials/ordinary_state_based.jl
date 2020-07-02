@@ -50,8 +50,8 @@ function force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
                 e = (magnitude(Y) - magnitude(X))
                 xij = magnitude(X)::Float64
                 wij = influence_function(X)::Float64
-                wji = _influence_function(X)::Float64
-                    if (e/magnitude(X))<S.critical_stretch
+                wji = influence_function(-X)::Float64
+                    if (e/xij)<S.critical_stretch
                         t = ( (((3*K-5*G)*(theta[i]*xij*wij/m[i]+theta[j]*xij*wji/m[j]) + 15*G*(e*wji/m[i]+e*wji/m[j]))) )*S.volume[j]/magnitude(Y)
 
                         force[1,i] += t*Y[1]
