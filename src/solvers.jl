@@ -1,3 +1,5 @@
+export minimize!
+
 """
     update_acc!(env::GeneralEnv)
 

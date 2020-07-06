@@ -1,3 +1,5 @@
+export write_data
+
 """
     horizon_correction(dr,r,hr)
 

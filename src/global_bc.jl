@@ -1,3 +1,5 @@
+export apply_bc!
+
 """
 This modules contains the boundary conditions definitions.
 """
@@ -126,7 +128,7 @@ end
 
 """
     apply_bc!(env,BC::ScaleFixBC)
-    
+
 It scales as well as fix a given material block. (like scale and fix edges, helpful in tensile quasi-static simulations.)
 """
 function apply_bc!(env,BC::ScaleFixBC)

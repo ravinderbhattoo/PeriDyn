@@ -2,11 +2,13 @@
 This module contains standard shape point mesh functions.
 """
 
+export create_block
+
 
 """
     create_block(lattice::Array{Float64,1}, N::Array{Int64,1})::Array{Float64,2}
 
-Create a rectangular point mesh. 
+Create a rectangular point mesh.
 """
 function create_block(lattice::Array{Float64,1}, N::Array{Int64,1})::Array{Float64,2}
     mesh = zeros(3,prod(N))
