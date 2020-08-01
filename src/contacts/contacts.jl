@@ -1,6 +1,8 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
+export short_range_repulsion!, collision_box, update_repulsive_neighs!
+
 
 """
     short_range_repulsion!(y,f,type,RepusionModel)
@@ -202,5 +204,7 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
         end
     end
 end
+
+
 
 #

@@ -2,6 +2,8 @@
 This module contain definition of Peridynamics material type.
 """
 
+export GeneralMaterial
+
 """
 Abstract PeridynamicsMaterial type.
 """

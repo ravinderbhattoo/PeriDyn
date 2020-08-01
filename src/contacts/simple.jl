@@ -2,6 +2,9 @@
 This module contains simple replusive model definitions.
 """
 
+export SimpleRepulsionModel, SimpleRepulsionModel11, SimpleRepulsionModel12, repulsion_acc
+
+
 struct SimpleRepulsionModel12<:RepulsionModel12
     pair::Array{Int64,1}
     densities::Array{Float64,1}

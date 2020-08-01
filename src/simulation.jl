@@ -1,3 +1,8 @@
+export Env, @env
+
+
+
+
 mutable struct GeneralEnv
     id::Int64
     type::Array{Int64,1}

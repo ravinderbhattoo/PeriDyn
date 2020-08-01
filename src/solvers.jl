@@ -1,3 +1,6 @@
+
+export update_acc!, velocity_verlet_step!, velocity_verlet!, minimize!, quasi_static!, update_neighs!
+
 """
     update_acc!(env::GeneralEnv)
 

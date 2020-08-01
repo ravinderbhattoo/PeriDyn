@@ -2,6 +2,8 @@
 This module is supposed to contains standard peridynamic state definitions (We will keep it only if it is useful).
 """
 
+export null, identity, magnitude, Xij
+
 """
     null(x::Array{Float64,1})
 
