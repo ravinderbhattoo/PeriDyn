@@ -1,6 +1,8 @@
-using PeriDyn, Test
+using Test, SafeTestsets
+using PeriDyn
+PD = PeriDyn
 
-@testset "mysum" begin
-    x, y  = 5, 7
-    @test mysum(x, y) == 12
-end
+include("./util_test.jl")
+include("./contacts_test.jl")
+include("./bond_based_test.jl")
+include("./ordinary_state_based_tests.jl")

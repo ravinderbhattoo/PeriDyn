@@ -1,11 +1,15 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
+export short_range_repulsion!, collision_box, update_repulsive_neighs!
+
 
 """
     short_range_repulsion!(y,f,type,RepusionModel)
 
 Updates (inplace) the repulsive acceleration of material points.
+
+``α``
 
 **`1-1 repulsion`**
 
@@ -75,8 +79,8 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -repulsion_acc(x1[:,i].-x1[:,j],RM)
-                f1[:,j] .+= repulsion_acc(x1[:,i].-x1[:,j],RM)
+                f1[:,i] .+= -0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
+                f1[:,j] .+= 0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
             end
             if j==0 break end
         end
@@ -121,6 +125,13 @@ function collision_box(x1::Array{Float64,2}, x2::Array{Float64,2}, skin::Float64
     end
 end
 
+
+"""
+    update_repulsive_neighs!(y,type,RepulsionModel12)
+
+Update neighbour list for repulsive force calculation (1-2 interaction).
+
+"""
 function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
     x11 = y[:,type.==RM.pair[1]]
     x22 = y[:,type.==RM.pair[2]]
@@ -149,6 +160,13 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
     end
 end
 
+
+"""
+    update_repulsive_neighs!(y,type,RepulsionModel11)
+
+Update neighbour list for repulsive force calculation (1-1 interaction).
+
+"""
 function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
     x = y[:,type.==RM.type]
     fill!(RM.neighs,0)
@@ -186,5 +204,7 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
         end
     end
 end
+
+
 
 #

@@ -1,3 +1,8 @@
+export Env, @env
+
+
+
+
 mutable struct GeneralEnv
     id::Int64
     type::Array{Int64,1}
@@ -17,7 +22,11 @@ mutable struct GeneralEnv
     Out::Any
 end
 
+"""
+    Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2)
 
+Create a GeneralEnv for holding parameters for a simulation.
+"""
 function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2)
     type = materials[1].type*ones(Int64,size(materials[1].general.y,2))
     for i in 2:size(materials,1)
@@ -34,18 +43,39 @@ function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2
     return GeneralEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials,nothing,nothing,nothing)
 end
 
+"""
+    set_ghost_atoms!(env,ghost_atoms)
+
+Set ghost atoms for an environment.
+"""
 function set_ghost_atoms!(env,ghost_atoms)
     env.ghost_atoms[1:end,1:end] = ghost_atoms
 end
 
+"""
+    set_env_active!(env)
+
+Set environment state active.
+"""
 function set_env_active!(env)
     env.state = 2
 end
 
+"""
+    set_env_idel!(env)
+
+Set environment state idel.
+"""
 function set_env_idel!(env)
     env.state = 1
 end
 
+
+"""
+    set_env_inactive!(env)
+
+Set environment state inactive.
+"""
 function set_env_inactive!(env)
     env.state = 0
 end

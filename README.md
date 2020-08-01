@@ -18,4 +18,12 @@ Peridynamics implementation in Julia.
 
 
 ## Instructions
-Coming soon.
+
+### Installation
+```
+using Pkg
+Pkg.add(PeriDyn)
+```
+
+### Documentation
+[here]('http://PeriDyn.github.io/')

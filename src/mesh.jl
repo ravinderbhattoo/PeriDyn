@@ -1,4 +1,15 @@
-function create_block(lattice::Array{Float64,1}, N::Array{Int64,1})::Array{Float64,2}
+"""
+This module contains standard shape point mesh functions.
+"""
+
+export create_block
+
+"""
+    create_block(lattice::Array{Float64,1}, N::Array{Int64,1})::Array{Float64,2}
+
+Create a rectangular point mesh.
+"""
+function create_block(lattice::Array{Float64,1}, N::Array{Int64,1})
     mesh = zeros(3,prod(N))
     a = 1
     for i in 1:N[1]
@@ -11,5 +22,5 @@ function create_block(lattice::Array{Float64,1}, N::Array{Int64,1})::Array{Float
             end
         end
     end
-    return mesh
+    return mesh, zeros(size(mesh)), copy(mesh), ones(prod(N))
 end
