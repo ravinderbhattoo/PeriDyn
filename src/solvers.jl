@@ -1,5 +1,12 @@
 
-export update_acc!, velocity_verlet_step!, velocity_verlet!, minimize!, quasi_static!, update_neighs!
+export save_state!, update_acc!, velocity_verlet_step!, velocity_verlet!, minimize!, quasi_static!, update_neighs!
+"""
+"""
+function save_state!(filename, env)
+    update_acc!(env)
+    write_data(filename, env.type, env.y, env.v, env.f)
+    print("Initial state saved.")
+end
 
 """
     update_acc!(env::GeneralEnv)
@@ -14,6 +21,9 @@ function update_acc!(env::GeneralEnv)
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
+    end
+    if any(isnan,env.f)
+        error("NaN in env.f")
     end
 end
 
@@ -35,12 +45,13 @@ function velocity_verlet_step!(env::GeneralEnv)
 end
 
 """
-    velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="datafile",start_at::Int64=0)
+    velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
 
 Velocity verlet :).
 """
-function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="datafile",start_at::Int64=0)
+function velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
     mkpath("./output")
+
     print("\nUpdating neighbors for collision..................")
     for id in 1:size(envs,1)
         env = envs[id]
@@ -50,6 +61,11 @@ function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="data
     end
     print("Done\n")
     N = N + start_at
+    for id in 1:size(envs,1)
+        env = envs[id]
+        filename = string("./output/",file_prefix,"_env_",env.id,"_step_",0,".data")
+        save_state!(filename,env)
+    end
     for i in (1+start_at):N
         for id in 1:size(envs,1)
             if envs[id].state==2
@@ -57,17 +73,17 @@ function velocity_verlet!(envs::Any,N::Int64;freq1=10,freq2=50,file_prefix="data
             end
         end
 
-        if i%freq1==0.0 || i==1
+        if i%filewrite_freq==0.0 || i==1
             print("\nWritting data file.......................")
             for id in 1:size(envs,1)
                 env = envs[id]
                 write_data(string("./output/",file_prefix,"_env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
             end
             print("Done\n")
-            print(i/N*100,"% over\n")
+            print(i/N*100,"%")
         end
 
-        if i%freq2==0.0
+        if i%neigh_update_freq==0.0
             print("\nUpdating neighbors for collision..................")
             for env in envs
                 if env.state[1]==2
@@ -109,13 +125,20 @@ function minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_s
 end
 
 """
-    quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, freq1::Int64=10, freq2::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
+    quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
 
 Implements quasi static simulation using minimize for each step.
 """
-function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, freq1::Int64=10, freq2::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
+function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
     mkpath("./output")
+    print_data_file!(envs,file_prefix,0)
     update_neighs!(envs)
+    for id in 1:size(envs,1)
+        env = envs[id]
+        filename = string("./output/",file_prefix,"_env_",env.id,"_step_",0,".data")
+        save_state!(filename,env)
+    end
+
     N = N + start_at
     for i in (1+start_at):N
         for id in 1:size(envs,1)
@@ -129,12 +152,12 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
         end
 
 
-        if i%freq1==0.0 || i==1
+        if i%filewrite_freq==0.0 || i==1
             print_data_file!(envs,file_prefix,i)
-            print(i/N*100,"% over\n")
+            print(i/N*100,"%")
         end
 
-        if i%freq2==0.0
+        if i%neigh_update_freq==0.0
             update_neighs!(envs)
         end
     end

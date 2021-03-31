@@ -18,6 +18,13 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
+[[ParticlesMesh]]
+git-tree-sha1 = "fa0e6e8efee06c45ba8c602c9af0a2f3f1923177"
+repo-rev = "master"
+repo-url = "/Users/ravinderbhattoo/git_repos/ParticlesMesh"
+uuid = "c25cd5cf-50cc-4aaf-a562-2971620ead52"
+version = "0.1.0"
+
 [[Random]]
 deps = ["Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"

@@ -1,5 +1,6 @@
-using Profile
+using Revise
 using PeriDyn
+
 
 x1, v1, y1, vol1 = create_block([1.0,1,1],[100,100,10])
 den1 = 1000.0
@@ -42,8 +43,9 @@ epsilon = 1000.0
 RM = SimpleRepulsionModel(alpha, epsilon, block1, block2, distanceX=2, max_neighs=200)
 RM1 = SimpleRepulsionModel(alpha, epsilon, block1, distanceX=3, max_neighs=200)
 RM2 = SimpleRepulsionModel(alpha, epsilon, block2, distanceX=2, max_neighs=200)
- 
 
-velocity_verlet!([env],1000,freq1=20,freq2=20,file_prefix="2blocks",start_at=0)
+env = Env(1, [block1, block2], [], [], 0.2)
+
+velocity_verlet!([env],1000,filewrite_freq=20,neigh_update_freq=20,file_prefix="2blocks",start_at=0)
 
 #
