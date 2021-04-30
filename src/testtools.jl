@@ -1,6 +1,7 @@
 function virgin_state_1D_2P(k)
     x1, v1, y1, vol1 = create_block([1.0,1,1],[2,2,2])
-    y1 = k*y1
+    v1 = x1*0
+    y1 = k*x1
 
     den1 = 1000.0
     vol1 = 1.0
@@ -32,7 +33,8 @@ end
 
 function virgin_state(k)
     x1, v1, y1, vol1 = create_block([1.0,1,1],[2,2,2])
-    y1 = k*y1
+    v1 = x1*0
+    y1 = k*x1
 
     den1 = 1000.0
     hor1 = 3.0
@@ -50,6 +52,7 @@ function virgin_state(k)
 
 
     x2, v2, y2, vol2 = create_block([1.0,1,1],[2,2,2])
+    x2_ = 1x2
     x2[1,:] .+= 1.5
     y2 = k*y2
     y2[1,:] .+= 1.5
@@ -85,7 +88,8 @@ function virgin_state2(k)
     alpha = 2.0
 
     x1, v1, y1, vol1 = create_block([1.0,1,1],[2,2,2])
-    y1 = k*y1
+    v1 = x1*0
+    y1 = k*x1
 
     den1 = 1000.0
     hor1 = 3.0
@@ -98,6 +102,7 @@ function virgin_state2(k)
 
 
     x2, v2, y2, vol2 = create_block([1.0,1,1],[2,2,2])
+    x2_ = 1x2
     x2[1,:] .+= 1.5
     y2 = k*y2
     y2[1,:] .+= 1.5

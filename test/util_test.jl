@@ -4,7 +4,8 @@
         PD = PeriDyn
 
         x0, v0, y0, vol0 = PD.create_block([1.0,1,1],[2,2,2])
-        gen_mat = PD.GeneralMaterial(x0, v0, y0, vol0, 1000.0, 3.0, 0.5)
+        v0 = x0*0
+        gen_mat = PD.GeneralMaterial(x0,v0,x0,x0[1,:]*0 .+ 1, 1000.0, 3.0, 0.5)
 
         # horizon correction
         @test isapprox(PD.horizon_correction(1,1,1),1)
