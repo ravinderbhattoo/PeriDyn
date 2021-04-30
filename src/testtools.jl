@@ -1,5 +1,5 @@
 function virgin_state_1D_2P(k)
-    x1 = create_block([1.0,1,1],[2,1,1])
+    x1, v1, y1, vol1 = create_block([1.0,1,1],[2,2,2])
     v1 = x1*0
     y1 = k*x1
 
@@ -32,7 +32,7 @@ end
 
 
 function virgin_state(k)
-    x1 = create_block([1.0,1,1],[2,2,2])
+    x1, v1, y1, vol1 = create_block([1.0,1,1],[2,2,2])
     v1 = x1*0
     y1 = k*x1
 
@@ -52,7 +52,7 @@ function virgin_state(k)
     block1 = OrdinaryStateBasedMaterial(1,mat_gen1,mat_spec1)
 
 
-    x2 = create_block([1.0,1,1],[2,2,2])
+    x2, v2, y2, vol2 = create_block([1.0,1,1],[2,2,2])
     x2_ = 1x2
     x2[1,:] .+= 1.5
     v2 = x2*0
@@ -90,7 +90,7 @@ function virgin_state2(k)
     epsilon = 1000.0
     alpha = 2.0
 
-    x1 = create_block([1.0,1,1],[2,2,2])
+    x1, v1, y1, vol1 = create_block([1.0,1,1],[2,2,2])
     v1 = x1*0
     y1 = k*x1
 
@@ -105,7 +105,7 @@ function virgin_state2(k)
     block1 = BondBasedMaterial(1,mat_gen1,mat_spec1)
 
 
-    x2 = create_block([1.0,1,1],[2,2,2])
+    x2, v2, y2, vol2 = create_block([1.0,1,1],[2,2,2])
     x2_ = 1x2
     x2[1,:] .+= 1.5
     v2 = x2*0

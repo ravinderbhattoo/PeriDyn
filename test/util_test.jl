@@ -3,7 +3,7 @@
         using PeriDyn
         PD = PeriDyn
 
-        x0 = PD.create_block([1.0,1,1],[2,2,2])
+        x0, v0, y0, vol0 = PD.create_block([1.0,1,1],[2,2,2])
         v0 = x0*0
         gen_mat = PD.GeneralMaterial(x0,v0,x0,x0[1,:]*0 .+ 1, 1000.0, 3.0, 0.5)
 
