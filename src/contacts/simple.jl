@@ -42,7 +42,7 @@ end
 
 Simple repulsive model for 1-1 material blocks.
 """
-function SimpleRepulsionModel(alpha::Float64,epsilon::Float64, mat1::PeridynamicsMaterial;distanceX=5,max_neighs=50)
+function SimpleRepulsionModel(alpha::Float64,epsilon::Float64, mat1::PeridynamicsMaterial; distanceX=5, max_neighs=50)
     max_neighs = min(max_neighs,size(mat1.general.x,2))
     neighs = zeros(max_neighs, size(mat1.general.x,2))
     SimpleRepulsionModel11(mat1.type,mat1.general,alpha,epsilon,neighs, mat1.general.particle_size*distanceX,max_neighs)

@@ -1,5 +1,13 @@
 
 export save_state!, update_acc!, velocity_verlet_step!, velocity_verlet!, minimize!, quasi_static!, update_neighs!
+using Dates
+
+function filepath_(file_prefix)
+    dtime = replace(string(ceil(Dates.now(), Dates.Second(1))), ":"=>"-")
+    return mkpath("./output/"*file_prefix*"_"*dtime)*"/"
+end
+
+
 """
 """
 function save_state!(filename, env)
@@ -50,8 +58,7 @@ end
 Velocity verlet :).
 """
 function velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
-    mkpath("./output")
-
+    foldername = filepath_(file_prefix)
     print("\nUpdating neighbors for collision..................")
     for id in 1:size(envs,1)
         env = envs[id]
@@ -63,7 +70,7 @@ function velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq
     N = N + start_at
     for id in 1:size(envs,1)
         env = envs[id]
-        filename = string("./output/",file_prefix,"_env_",env.id,"_step_",0,".data")
+        filename = string(foldername,"env_",env.id,"_step_",0,".data")
         save_state!(filename,env)
     end
     for i in (1+start_at):N
@@ -77,7 +84,7 @@ function velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq
             print("\nWritting data file.......................")
             for id in 1:size(envs,1)
                 env = envs[id]
-                write_data(string("./output/",file_prefix,"_env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
+                write_data(string(foldername,"env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
             end
             print("Done\n")
             print(i/N*100,"%")
@@ -130,12 +137,12 @@ end
 Implements quasi static simulation using minimize for each step.
 """
 function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
-    mkpath("./output")
-    print_data_file!(envs,file_prefix,0)
+    foldername = filepath_(file_prefix)
+    print_data_file!(envs, foldername, 0)
     update_neighs!(envs)
     for id in 1:size(envs,1)
         env = envs[id]
-        filename = string("./output/",file_prefix,"_env_",env.id,"_step_",0,".data")
+        filename = string(foldername,"env_",env.id,"_step_",0,".data")
         save_state!(filename,env)
     end
 
@@ -153,7 +160,7 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
 
 
         if i%filewrite_freq==0.0 || i==1
-            print_data_file!(envs,file_prefix,i)
+            print_data_file!(envs, foldername, i)
             print(i/N*100,"%")
         end
 
@@ -182,15 +189,15 @@ function update_neighs!(envs)
 end
 
 """
-    print_data_file!(envs::Array{GeneralEnv}, file_prefix::String,i::Int64)
+    print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64)
 
 Writes data file to disk.
 """
-function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String,i::Int64)
+function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64)
     print("\nWritting data file................................")
     for id in 1:size(envs,1)
         env = envs[id]
-        write_data(string("./output/",file_prefix,"_env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
+        write_data(string(file_prefix,"env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
     end
     print("Done\n")
 end

@@ -120,6 +120,10 @@ struct ScaleFixBC<:BoundaryCondition
     LastTimeStep::Array{Int64,1}
 end
 
+"""
+    ScaleFixBC(blockID, bool, m, Fixbool)
+
+"""
 function ScaleFixBC(blockID,bool,m,Fixbool)
     Fix = zeros(Float64,3,sum(Fixbool))
     LastTimeStep = [-1]
