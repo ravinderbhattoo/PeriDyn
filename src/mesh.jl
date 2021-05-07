@@ -1,9 +1,3 @@
-"""
-This module contains standard shape point mesh functions.
-"""
-# imports
-using ParticlesMesh
-
 # exports
 export create_block
 

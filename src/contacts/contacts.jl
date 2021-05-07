@@ -1,6 +1,16 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
+function Base.show(io::IO, i::RepulsionModel11)
+    println(io, typeof(i))
+    for j in fieldnames(typeof(i))
+        if j in [:neighs]
+        else
+        println(io, j, ": ", getproperty(i, j))
+        end
+    end
+end
+
 export short_range_repulsion!, collision_box, update_repulsive_neighs!
 
 
@@ -72,7 +82,10 @@ julia> short_range_repulsion!(y,f,type,RepusionModel)
 ```
 """
 function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
-    mask1 = type.==RM.type
+    mask1 = true
+    for j in RM.type
+        mask1 = mask1 .| (type .== j)
+    end
     f1 = f[:,mask1]
     x1 = y[:,mask1]
     for i in 1:size(RM.neighs,2)
@@ -167,8 +180,12 @@ end
 Update neighbour list for repulsive force calculation (1-1 interaction).
 
 """
-function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
-    x = y[:,type.==RM.type]
+function update_repulsive_neighs!(y, type, RM::RepulsionModel11)
+    mask = false
+    for j in RM.type
+        mask = mask .| (type .== j)
+    end
+    x = y[:, mask]
     fill!(RM.neighs,0)
     cells, cell_neighs = get_cells(x,RM.distance)
     for cell_i in 1:length(cells)
@@ -203,8 +220,13 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
             end
         end
     end
+    println("Average repulsive neighs: $(sum(RM.neighs .> 0.5)/size(x, 2))")
 end
 
+
+include("./LJ.jl")
+include("./nonlinear.jl")
+include("./linear.jl")
 
 
 #

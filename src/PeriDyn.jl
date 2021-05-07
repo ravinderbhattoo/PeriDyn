@@ -11,7 +11,6 @@ include("./materials/ordinary_state_based.jl")
 
 # contact models
 include("./contacts/contacts.jl")
-include("./contacts/simple.jl")
 
 include("./util.jl") # utility functions
 include("./global_bc.jl") # boundary condition functions

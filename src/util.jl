@@ -68,18 +68,18 @@ end
 
 It gives weighted volume.
 """
-function weighted_volume(S::GeneralMaterial)
-    m = 0*S.volume::Array{Float64,1}
+function weighted_volume(x, volume, particle_size, family, horizon)
+    m = 0*volume::Array{Float64,1}
     dr = zeros(3)::Array{Float64,1}
     j = 0::Int64
-    for i in 1:size(S.x,2)
-        for k in 1:size(S.family,1)
-            j = S.family[k,i]
+    for i in 1:size(x,2)
+        for k in 1:size(family,1)
+            j = family[k,i]
             if (j>0) & (i!=j)
-                dr[1] = S.x[1,j]-S.x[1,i]
-                dr[2] = S.x[2,j]-S.x[2,i]
-                dr[3] = S.x[3,j]-S.x[3,i]
-                m[i] += influence_function(dr)*magnitude(dr)^2*horizon_correction(dr,S.particle_size,S.horizon)*S.volume[j]
+                dr[1] = x[1,j]-x[1,i]
+                dr[2] = x[2,j]-x[2,i]
+                dr[3] = x[3,j]-x[3,i]
+                m[i] += influence_function(dr)*magnitude(dr)^2*horizon_correction(dr, particle_size,horizon)*volume[j]
             end
         end
     end
@@ -120,7 +120,7 @@ end
 
 Fill cells with material points.
 """
-function get_cells(x::Array{Float64,2},horizon::Float64)
+function get_cells(x::Array{Float64,2}, horizon::Float64)
     _min = minimum(x,dims=2)
     _max = maximum(x,dims=2)
     N = Int.(1 .+ floor.((_max-_min)/horizon))
@@ -188,7 +188,7 @@ end
 
 It writes the data file.
 """
-function write_data(filename,every,type,pos)
+function write_data(filename, every, type, pos)
     file = open(filename, "w+")
     for i in 1:every:size(pos,3)
         y = pos[:,:,i]
@@ -209,7 +209,7 @@ end
 
 It writes the data file.
 """
-function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2})
+function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2})
     file = open(filename, "w+")
     N = size(y,2)
     write(file, "$N \n\n")
@@ -228,7 +228,7 @@ end
 
 It writes the data file.
 """
-function write_data(filename::String,type::Array{Int64,1},y::Array{Float64,2}, v::Array{Float64,2},f::Array{Float64,2},)
+function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2}, v::Array{Float64,2}, f::Array{Float64,2},)
     file = open(filename, "w+")
     N = size(y,2)
     write(file, "$N \n\n")
@@ -245,11 +245,12 @@ end
 
 
 """
-    write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
+    write_data_cell_ids(filename::String, y::Array{Float64,2}, cells::Any)
 
 It writes the data file.
 """
-function write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
+function write_data_cell_ids(filename::String, y::Matrix, horizon)
+    cells, _ = get_cells(y, horizon)
     file = open(filename, "w+")
     N = size(y,2)
     write(file, "$N \n\n")
@@ -267,4 +268,51 @@ function write_data_cell_ids(filename::String,y::Array{Float64,2},cells::Any)
         end
     end
     close(file)
+end
+
+
+"""
+    make_matrix(S::Array{T,1})
+
+Create an symmetrical NxN matrix from a vector of length N(N+1)/2.    
+
+================
+## Returns
+    M :: Matrix
+"""
+function make_matrix(S::Array{T,1}) where T
+    n = length(S)
+    N = Int64(sqrt(2*n + 0.5^2) - 0.5)
+    bs = zeros(T, N, N)
+    a = 1
+    for i in 1:N 
+        for j in i:N 
+            bs[i, j] = S[a]
+            bs[j, i] = S[a]
+            a += 1 
+        end 
+    end 
+    return bs
+end
+
+
+"""
+    make_matrix(S::Array{T,1})
+
+Create an symmetrical NxN matrix from a vector of length N(N+1)/2.    
+
+================
+## Returns
+    M :: Matrix
+"""
+function make_matrix_gm(S::Array{T,1}) where T
+    N = length(S)
+    bs = zeros(T, N, N)
+    for i in 1:N 
+        for j in i:N 
+            bs[i, j] = (S[i]*S[j])^0.5
+            bs[j, i] = b[i, j]
+        end 
+    end 
+    return bs
 end

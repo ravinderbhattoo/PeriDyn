@@ -28,9 +28,9 @@ end
 Create a GeneralEnv for holding parameters for a simulation.
 """
 function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2)
-    type = materials[1].type*ones(Int64,size(materials[1].general.y,2))
+    type = materials[1].general.type
     for i in 2:size(materials,1)
-        type = vcat(type,materials[i].type*ones(Int64,size(materials[i].general.y,2)))
+        type = vcat(type, materials[i].general.type)
     end
     y = materials[1].general.y
     for mat in materials[2:end]
