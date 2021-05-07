@@ -3,41 +3,45 @@ export OrdinaryStateBasedMaterial, OrdinaryStateBasedSpecific, force_density_T
 """
 Specific ordinary state based materail type.
 """
-struct OrdinaryStateBasedSpecific
-    bulk_modulus::Float64
-    shear_modulus::Float64
-    weighted_volume::Array{Float64,1}
+struct OrdinaryStateBasedSpecific <: SpecificMaterial
+    bulk_modulus::Array{Float64, 2}
+    shear_modulus::Array{Float64, 2}
+    critical_stretch::Array{Float64, 2}
+    density::Array{Float64, 1}
 end
 
 """
     OrdinaryStateBasedSpecific(bulk_modulus::Float64, shear_modulus::Float64, mat_gen::GeneralMaterial)
 Specific ordinary state based materail type.
 """
-function OrdinaryStateBasedSpecific(bulk_modulus::Float64, shear_modulus::Float64, mat_gen::GeneralMaterial)
-    m = weighted_volume(mat_gen)
-    return OrdinaryStateBasedSpecific(bulk_modulus, shear_modulus, m)
+function OrdinaryStateBasedSpecific(bulk_modulus::Array{Float64, 1}, shear_modulus::Array{Float64,1}, critical_stretch, density)
+    return OrdinaryStateBasedSpecific(make_matrix(bulk_modulus), make_matrix(shear_modulus), make_matrix(critical_stretch), density)
 end
 
-
-struct OrdinaryStateBasedMaterial<:PeridynamicsMaterial
-    type::Int64
+struct OrdinaryStateBasedMaterial <: PeridynamicsMaterial
+    type::UnitRange{Int64}
     general::GeneralMaterial
     specific::OrdinaryStateBasedSpecific
 end
+
+function PeridynamicsMaterial(gen, spc::OrdinaryStateBasedSpecific)
+    type = minimum(gen.type):maximum(gen.type)
+    OrdinaryStateBasedMaterial(type, gen, spc)
+end
+
 
 """
     force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
 
 Calculates force density (actually acceleration) for ordinary state based material type.
 """
-function force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
+function force_density_T(y::Array{Float64,2}, mat::OrdinaryStateBasedMaterial)
+    types = mat.general.type
     force = zeros(size(y))
     X = Float64[1.0,0.0,0.0]
     Y = Float64[1.0,0.0,0.0]
     S = mat.general
-    K = mat.specific.bulk_modulus
-    G = mat.specific.shear_modulus
-    m = mat.specific.weighted_volume
+    m = mat.general.weighted_volume
     theta = dilatation(y,S,m)
     for i in 1:size(S.x,2)
         for k in 1:size(S.family,1)
@@ -53,9 +57,12 @@ function force_density_T(y::Array{Float64,2},mat::OrdinaryStateBasedMaterial)
                 xij = magnitude(X)::Float64
                 wij = influence_function(X)::Float64
                 wji = influence_function(-X)::Float64
-                    if (e/xij)<S.critical_stretch
+                type1 = types[i]- mat.type.start + 1
+                type2 = types[j] - mat.type.start + 1
+                    if (e/xij)<mat.specific.critical_stretch[type1, type2]
+                        K = mat.specific.bulk_modulus[type1, type2]
+                        G = mat.specific.shear_modulus[type1, type2]
                         t = ( (((3*K-5*G)*(theta[i]*xij*wij/m[i]+theta[j]*xij*wji/m[j]) + 15*G*(e*wji/m[i]+e*wji/m[j]))) )*S.volume[j]/magnitude(Y)
-
                         force[1,i] += t*Y[1]
                         force[2,i] += t*Y[2]
                         force[3,i] += t*Y[3]

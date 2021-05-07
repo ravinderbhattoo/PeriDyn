@@ -16,20 +16,40 @@ function save_state!(filename, env)
     print("Initial state saved.")
 end
 
+function apply_bc_at0(env, start_at)
+    if start_at==0
+        for bc in env.boundary_conditions
+            apply_bc_at0!(env, bc)
+        end
+    end
+end
+
 """
     update_acc!(env::GeneralEnv)
 
 Updates acceleration of all the material points in a simulation environment.
 """
 function update_acc!(env::GeneralEnv)
-    fill!(env.f,0.0)
+    fill!(env.f, 1.0)
     for i in 1:size(env.material_blocks,1)
-        mask = env.type.==env.material_blocks[i].type
-        env.f[:,mask] .+= force_density_T(env.y[:,mask],env.material_blocks[i])/env.material_blocks[i].general.density
+        mask = false
+        for j in env.material_blocks[i].type
+            m = (env.type .== j)
+            mask = mask .| m
+        end
+        env.f[:,mask] .*= force_density_T(env.y[:,mask],env.material_blocks[i]) 
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
     end
+
+    for i in 1:size(env.material_blocks,1)
+        for j in env.material_blocks[i].type
+            m = (env.type .== j)
+            env.f[:, m] ./= env.material_blocks[i].specific.density[j]
+        end
+    end
+
     if any(isnan,env.f)
         error("NaN in env.f")
     end
@@ -45,10 +65,13 @@ function velocity_verlet_step!(env::GeneralEnv)
     env.v .+= c.*env.f
     env.y .+= env.dt.*env.v
     for bc in env.boundary_conditions
-        apply_bc!(env,bc)
+        apply_bc!(env, bc)
     end
     update_acc!(env)
     env.v .+= c.*env.f
+    for bc in env.boundary_conditions
+        apply_bc!(env, bc)
+    end
     env.time_step += 1
 end
 
@@ -57,13 +80,13 @@ end
 
 Velocity verlet :).
 """
-function velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
+function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
     foldername = filepath_(file_prefix)
     print("\nUpdating neighbors for collision..................")
     for id in 1:size(envs,1)
         env = envs[id]
         for rm in 1:size(env.short_range_repulsion,1)
-            update_repulsive_neighs!(env.y,env.type,env.short_range_repulsion[rm])
+            update_repulsive_neighs!(env.y, env.type, env.short_range_repulsion[rm])
         end
     end
     print("Done\n")
@@ -71,7 +94,12 @@ function velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq
     for id in 1:size(envs,1)
         env = envs[id]
         filename = string(foldername,"env_",env.id,"_step_",0,".data")
-        save_state!(filename,env)
+        save_state!(filename, env)
+    end
+    for id in 1:size(envs,1)
+        if envs[id].state==2
+            apply_bc_at0(envs[id], start_at)
+        end
     end
     for i in (1+start_at):N
         for id in 1:size(envs,1)
@@ -146,6 +174,11 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
         save_state!(filename,env)
     end
 
+    for id in 1:size(envs,1)
+        if envs[id].state==2
+            apply_bc_at0(envs[id], start_at)
+        end
+    end
     N = N + start_at
     for i in (1+start_at):N
         for id in 1:size(envs,1)
@@ -157,8 +190,6 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
                 envs[id].Collect!(envs[id].Params,envs[id].Out,i)
             end
         end
-
-
         if i%filewrite_freq==0.0 || i==1
             print_data_file!(envs, foldername, i)
             print(i/N*100,"%")
