@@ -1,7 +1,6 @@
-@testset "constacts/simple.jl" begin
+@testset "constacts.jl" begin
     @safetestset "b1" begin
-        using PeriDyn
-        PD = PeriDyn
+        using PeriDyn, PDMesh
         env = PD.virgin_state(1.1)
 
         epsilon = 1000.0
@@ -9,21 +8,21 @@
 
         equi_dist = env.short_range_repulsion[1].equi_dist
         val = PD.repulsion_acc([0.75,0,0],1,env.short_range_repulsion[1])
-        val_ = epsilon*(0.75-equi_dist)*(alpha-1)/env.short_range_repulsion[1].densities[1]
+        val_ = epsilon*(0.75-equi_dist)*(alpha-1)
         @test isapprox(PD.magnitude(val),abs(val_))
 
         val = PD.repulsion_acc([0.75,0,0],2,env.short_range_repulsion[1])
-        val_ = epsilon*(0.75-equi_dist)*(alpha-1)/env.short_range_repulsion[1].densities[2]
+        val_ = epsilon*(0.75-equi_dist)*(alpha-1)
         @test isapprox(PD.magnitude(val),abs(val_))
 
         equi_dist = env.short_range_repulsion[2].material.particle_size
         val = PD.repulsion_acc([0,0.75,0],env.short_range_repulsion[2])
-        val_ = epsilon*(0.75-equi_dist)*(alpha-1)/env.short_range_repulsion[2].material.density
+        val_ = epsilon*(0.75-equi_dist)*(alpha-1)
         @test isapprox(PD.magnitude(val),abs(val_))
 
         equi_dist = env.short_range_repulsion[3].material.particle_size
         val = PD.repulsion_acc([0,0,0.75],env.short_range_repulsion[3])
-        val_ = epsilon*(0.75-equi_dist)*(alpha-1)/env.short_range_repulsion[3].material.density
+        val_ = epsilon*(0.75-equi_dist)*(alpha-1)
         @test isapprox(PD.magnitude(val),abs(val_))
     end
 end

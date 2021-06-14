@@ -1,5 +1,5 @@
 using Test, SafeTestsets
-using PeriDyn
+using PeriDyn, PDMesh
 PD = PeriDyn
 
 

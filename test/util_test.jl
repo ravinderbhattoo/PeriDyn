@@ -1,11 +1,10 @@
 @testset "util.jl" begin
     @safetestset "b1" begin
-        using PeriDyn
+        using PeriDyn, PDMesh
         PD = PeriDyn
 
-        x0, v0, y0, vol0 = PD.create_block([1.0,1,1],[2,2,2])
-        v0 = x0*0
-        gen_mat = PD.GeneralMaterial(x0,v0,x0,x0[1,:]*0 .+ 1, 1000.0, 3.0, 0.5)
+        x0, v0, y0, vol0, type0 = create(PDMesh.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
+        gen_mat = PD.GeneralMaterial(x0, v0, y0, vol0, type0, 3.0)
 
         # horizon correction
         @test isapprox(PD.horizon_correction(1,1,1),1)
@@ -17,12 +16,12 @@
         @test isapprox(PD.influence_function([1.0,3.0,4.0]),1/sqrt(26.0))
 
         # weighted volume
-        @test isapprox(sum(PD.weighted_volume(gen_mat)),8*8.974691494688162;atol = 1.0e-6)
-        @test isapprox(sum(PD.weighted_volume(gen_mat)),8*8.974691494688162)
+        @test isapprox(sum(gen_mat.weighted_volume), 8*8.974691494688162;atol = 1.0e-6)
+        @test isapprox(sum(gen_mat.weighted_volume), 8*8.974691494688162)
 
         # dilatation
-        @test isapprox(sum(PD.dilatation_theta(1x0,gen_mat)),0.0)
-        @test isapprox(sum(PD.dilatation_theta(1.1x0,gen_mat)), 8*(3*0.1+3*0.1*sqrt(2)+0.1*sqrt(3)))
+        @test isapprox(sum(PD.dilatation_theta(1x0, gen_mat)),0.0)
+        @test isapprox(sum(PD.dilatation_theta(1.1x0, gen_mat)), 8*(3*0.1+3*0.1*sqrt(2)+0.1*sqrt(3)))
 
         x2 = 1x0
         x2[2,:] .*= 1.1
