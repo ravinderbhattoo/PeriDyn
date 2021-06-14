@@ -1,8 +1,5 @@
 export Env, @env
 
-
-
-
 mutable struct GeneralEnv
     id::Int64
     type::Array{Int64,1}
@@ -11,6 +8,8 @@ mutable struct GeneralEnv
     y::Array{Float64,2}
     v::Array{Float64,2}
     f::Array{Float64,2}
+    p::Array{Float64,2}
+    volume::Array{Float64,1}
     time_step::Int64
     dt::Float64
     neighs::Array{Int64,2}
@@ -40,7 +39,11 @@ function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2
     for mat in materials[2:end]
         v = hcat(v,mat.general.velocity)
     end
-    return GeneralEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials,nothing,nothing,nothing)
+    volume = materials[1].general.volume
+    for mat in materials[2:end]
+        volume = vcat(volume,mat.general.volume)
+    end
+    return GeneralEnv(id,type,0*type,state,y,v,0v,0v,volume,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials,nothing,nothing,nothing)
 end
 
 """
