@@ -30,23 +30,28 @@ end
 Updates acceleration of all the material points in a simulation environment.
 """
 function update_acc!(env::GeneralEnv)
-    fill!(env.f, 1.0)
+    fill!(env.f, 0.0)
     for i in 1:size(env.material_blocks,1)
         mask = false
         for j in env.material_blocks[i].type
             m = (env.type .== j)
             mask = mask .| m
         end
-        env.f[:,mask] .*= force_density_T(env.y[:,mask],env.material_blocks[i]) 
+        env.f[:,mask] .+= force_density_T(env.y[:,mask],env.material_blocks[i]) 
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
     end
 
+    env.p[1, :] = 1*env.volume
+    env.p[2, :] = 1*env.volume
+    env.p[3, :] = 1*env.volume
     for i in 1:size(env.material_blocks,1)
         for j in env.material_blocks[i].type
             m = (env.type .== j)
-            env.f[:, m] ./= env.material_blocks[i].specific.density[j]
+            t = j - env.material_blocks[i].type.start + 1
+            env.f[:, m] ./= env.material_blocks[i].specific.density[t]
+            env.p[:, m] .*= env.v[:, m] .* env.material_blocks[i].specific.density[t]
         end
     end
 
@@ -80,7 +85,7 @@ end
 
 Velocity verlet :).
 """
-function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
+function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_freq=10,neigh_update_freq=50,file_prefix="datafile",start_at::Int64=0)
     foldername = filepath_(file_prefix)
     print("\nUpdating neighbors for collision..................")
     for id in 1:size(envs,1)
@@ -108,6 +113,12 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,neigh_update_fr
             end
         end
 
+        if i%average_prop_freq==0.0 || i==1
+            for env in envs
+                println("Momentum: $i", sum(env.p, dims=2))
+            end
+        end
+
         if i%filewrite_freq==0.0 || i==1
             print("\nWritting data file.......................")
             for id in 1:size(envs,1)
@@ -119,7 +130,7 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,neigh_update_fr
         end
 
         if i%neigh_update_freq==0.0
-            print("\nUpdating neighbors for collision..................")
+            println("\nUpdating neighbors for collision..................")
             for env in envs
                 if env.state[1]==2
                     for rm in 1:size(env.short_range_repulsion,1)
@@ -127,7 +138,6 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,neigh_update_fr
                     end
                 end
             end
-            print("Done\n")
         end
     end
 end
