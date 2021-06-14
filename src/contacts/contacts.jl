@@ -38,8 +38,14 @@ julia> short_range_repulsion!(y,f,type,RepusionModel)
 ```
 """
 function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
-    mask1 = type.==RM.pair[1]
-    mask2 = type.==RM.pair[2]
+    mask1 = false
+    for i in RM.pair[1]
+        mask1 = mask1 .| (type .== i)
+    end
+    mask2 = false
+    for i in RM.pair[2]
+        mask2 = mask2 .| (type .== i)
+    end
     f1 = f[:,mask1]
     f2 = f[:,mask2]
     x1 = y[:,mask1]
@@ -48,14 +54,14 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -repulsion_acc(x1[:,i].-x2[:,j],1,RM)
-                f2[:,j] .+= repulsion_acc(x1[:,i].-x2[:,j],2,RM)
+                f1[:,i] .+= -repulsion_acc(x1[:,i].-x2[:,j], RM)
+                f2[:,j] .+= repulsion_acc(x1[:,i].-x2[:,j], RM)
             end
             if j==0 break end
         end
     end
-    f[:,mask1] = f1
-    f[:,mask2] = f2
+    f[:, mask1] .= f1
+    f[:, mask2] .= f2
     return nothing
 end
 
@@ -64,25 +70,9 @@ end
     short_range_repulsion!(y,f,type,RepusionModel)
 
 Updates (inplace) the repulsive acceleration of material points.
-
-**`1-2 repulsion`**
-
-# Input Args:
-- `y :: Positions of material point`
-- `f :: Acceleration of material points`
-- `type :: Type of material points`
-- `RepulsionModel :: Repulsion model (see contacts.jl for more details)`
-
-# Output Args:
-- `Noting (Inplace updation of f (acceleration))`
-
-# Examples
-```jldoctest
-julia> short_range_repulsion!(y,f,type,RepusionModel)
-```
 """
 function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
-    mask1 = true
+    mask1 = false
     for j in RM.type
         mask1 = mask1 .| (type .== j)
     end
@@ -146,16 +136,24 @@ Update neighbour list for repulsive force calculation (1-2 interaction).
 
 """
 function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
-    x11 = y[:,type.==RM.pair[1]]
-    x22 = y[:,type.==RM.pair[2]]
+    _mask1 = false
+    for i in RM.pair[1]
+        _mask1 = _mask1 .| (type .== i)
+    end
+    _mask2 = false
+    for i in RM.pair[2]
+        _mask2 = _mask2 .| (type .== i)
+    end
+    x11 = y[:, _mask1]
+    x22 = y[:, _mask2]
     box_min, box_max, ifcheck = collision_box(x11, x22, RM.distance)
     if ifcheck
         mask1 = reshape(prod(x11.>box_min,dims=1) .* prod(x11.<box_max,dims=1),:)
         mask2 = reshape(prod(x22.>box_min,dims=1) .* prod(x22.<box_max,dims=1),:)
-        x1 = x11[1:end,mask1]
-        x2 = x22[1:end,mask2]
+        x1 = x11[1:end, mask1]
+        x2 = x22[1:end, mask2]
         a_id = collect(1:size(x22,2))[mask2]
-        family = zeros(Float64, max(RM.max_neighs,size(x2,2)),size(x1,2))
+        family = zeros(Float64, max(RM.max_neighs, size(x2,2)), size(x1,2))
         for i in 1:size(x1,2)
             a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
             for j in 1:size(x2,2)
@@ -167,9 +165,9 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
             end
         end
         family = sort(family,dims=1)
-        RM.neighs[1:end,mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
+        RM.neighs[1:end, mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
     else
-        RM.neighs[1:end,1:end] = 0
+        RM.neighs[1:end, 1:end] .= 0
     end
 end
 

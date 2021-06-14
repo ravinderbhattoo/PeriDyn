@@ -6,7 +6,7 @@ export LJRepulsionModel, LJRepulsionModel11, LJRepulsionModel12, repulsion_acc
 
 
 struct LJRepulsionModel12<:RepulsionModel12
-    pair::Array{Int64,1}
+    pair::Vector{UnitRange{Int64}}
     alpha::Float64
     epsilon::Float64
     equi_dist::Float64

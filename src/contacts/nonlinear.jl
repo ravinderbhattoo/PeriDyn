@@ -6,7 +6,7 @@ export NonLinearRepulsionModel, NonLinearRepulsionModel11, NonLinearRepulsionMod
 
 
 struct NonLinearRepulsionModel12<:RepulsionModel12
-    pair::Array{Int64,1}
+    pair::Vector{UnitRange{Int64}}
     exponent::Float64
     stifness::Float64
     equi_dist::Float64
@@ -48,11 +48,11 @@ function NonLinearRepulsionModel(exponent::Float64,stifness::Float64, mat1::Peri
 end
 
 """
-    repulsion_acc(dr,den_i,RepMod::NonLinearRepulsionModel12)
+    repulsion_acc(dr,RepMod::NonLinearRepulsionModel12)
 
 Calculates repulsive acceleration for 1-2 materials block interaction.
 """
-function repulsion_acc(dr,den_i,RepMod::NonLinearRepulsionModel12)
+function repulsion_acc(dr,RepMod::NonLinearRepulsionModel12)
     mag_dr = magnitude(dr) + 1.0e-10
     del_x = RepMod.equi_dist - mag_dr
     if del_x<0
@@ -64,7 +64,7 @@ end
 
 
 """
-    repulsion_acc(dr,den_i,RepMod::NonLinearRepulsionModel11)
+    repulsion_acc(dr,RepMod::NonLinearRepulsionModel11)
 
 Calculates repulsive acceleration for 1-1 materials block interaction.
 """
