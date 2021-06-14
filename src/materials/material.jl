@@ -47,7 +47,7 @@ General peridynamics material type.
 function GeneralMaterial(y0, v0, x, volume, type, horizon; max_neigh=100, particle_size=0)
     family = cal_family(x, horizon, max_neigh)
     intact = family .> 0.5
-    print("Average family members: ", sum(intact)/size(intact, 2))
+    println("Average family members: ", sum(intact)/size(intact, 2))
     k = (size(intact,1)-maximum(sum(intact,dims=1)))::Int64
     intact = intact[k:end,:]
     family = family[k:end,:]
