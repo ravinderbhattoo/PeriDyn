@@ -1,5 +1,6 @@
 
 export save_state!, update_acc!, velocity_verlet_step!, velocity_verlet!, minimize!, quasi_static!, update_neighs!
+using Flux
 using Dates
 
 function filepath_(file_prefix)
@@ -110,6 +111,11 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_fr
         for id in 1:size(envs,1)
             if envs[id].state==2
                 velocity_verlet_step!(envs[id])
+                if envs[id].Collect! !== nothing
+                    envs[id].Collect!(envs[id],i)
+                end
+            else
+                println("Env $id is not active. step = $i")
             end
         end
 
@@ -126,7 +132,7 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_fr
                 write_data(string(foldername,"env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
             end
             print("Done\n")
-            print(i/N*100,"%")
+            println(i/N*100,"%")
         end
 
         if i%neigh_update_freq==0.0
@@ -147,14 +153,15 @@ end
 
 Minimize potential energy of simulation environment.
 """
-function minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_step_tol_per::Float64=5.0)
+function minimize2!(env::GeneralEnv,step_size::Float64; max_iter::Int64=50,min_step_tol_per::Float64=5.0)
     ref_particle_size = env.material_blocks[1].general.particle_size
     orig_step_size = step_size
     for i in 1:max_iter
         update_acc!(env)
-        if maximum(abs.(env.f))*step_size < min_step_tol_per/100*ref_particle_size
+        max_grad = maximum(abs.(env.f))
+        if max_grad*step_size < min_step_tol_per/100*ref_particle_size
             step_size *= 2
-        elseif maximum(abs.(env.f))*step_size > ref_particle_size/2
+        elseif max_grad*step_size > ref_particle_size/2
             step_size /= 2
         else
         end
@@ -162,19 +169,64 @@ function minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_s
         for bc in env.boundary_conditions
             apply_bc!(env,bc)
         end
-        if step_size>1000*orig_step_size
+
+        if (step_size>1000*orig_step_size) || (max_grad*step_size/ref_particle_size < 1.0e-6)
             break
+        end
+        if i==max_iter
+            println("Max iter reached.")
         end
     end
     env.time_step += 1
 end
+
+
+function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_tol::Float64=1.0e-6, f_tol::Float64=1.0e-6)
+    for bc in env.boundary_conditions
+        apply_bc!(env, bc)
+    end
+    update_acc!(env)
+
+    opt = Flux.ADAM()
+    mask = false
+    for bc in env.boundary_conditions
+        if ~(bc.onlyatstart)
+            mask = mask .| bc.bool
+        end
+    end
+    mask = .!(mask)
+    println("Minimizing...")
+    for i in 1:max_iter
+        f_tol_ = maximum(abs.(env.f[:, mask]))
+        Δy = Flux.Optimise.apply!(opt, env.y, env.f)
+        env.y .+= Δy
+        x_tol_ = maximum(abs.(Δy[:, mask]))
+
+        for bc in env.boundary_conditions
+            if ~(bc.onlyatstart)
+                apply_bc!(env, bc)
+            end
+        end
+        update_acc!(env)
+
+        if ( (x_tol_ < x_tol) || (f_tol_ < f_tol) )
+            println("Tolerance reached. $x_tol_ <= $x_tol or $f_tol_ <= $f_tol")
+            break
+        end
+        if i==max_iter
+            println("Maximum iteration ($max_iter) reached.")
+        end
+    end
+    env.time_step += 1
+end
+
 
 """
     quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
 
 Implements quasi static simulation using minimize for each step.
 """
-function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, min_step_tol_per::Float64=0.5, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
+function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
     foldername = filepath_(file_prefix)
     print_data_file!(envs, foldername, 0)
     update_neighs!(envs)
@@ -194,15 +246,15 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
         for id in 1:size(envs,1)
             if envs[id].state==2
                 fill!(envs[id].v,0.0)
-                minimize!(envs[id],step_size)
+                minimize!(envs[id],step_size; max_iter=max_iter)
             end
-            if envs[id].Collect! != nothing
-                envs[id].Collect!(envs[id].Params,envs[id].Out,i)
+            if envs[id].Collect! !== nothing
+                envs[id].Collect!(envs[id],i)
             end
         end
         if i%filewrite_freq==0.0 || i==1
             print_data_file!(envs, foldername, i)
-            print(i/N*100,"%")
+            println(i/N*100,"%")
         end
 
         if i%neigh_update_freq==0.0
