@@ -2,45 +2,26 @@
 This module is supposed to contains standard peridynamic state definitions (We will keep it only if it is useful).
 """
 
-export null, identity, magnitude, Xij
+export _O, _I, _magnitude, _ij, _unit
 
-"""
-    null(x::Array{Float64,1})
-
-`Peridynamics state: Null operator`
-"""
-function null(x::Array{Float64,1})
-    return zeros(Float64,size(x)...)
+function _O(x::AbstractArray)
+    return 0*x
 end
 
-
-"""
-    identity(x::Array{Float64,1})
-
-`Peridynamics state: Identity operator`
-"""
-function identity(x::Array{Float64,1})
+function _I(x::AbstractArray)
     return x
 end
 
-
-"""
-    magnitude(x::Array{Float64,1})
-
-`Peridynamics state: Modulus operator`
-"""
-function magnitude(x::Array{Float64,1})
-    return sqrt(x[1]*x[1]+x[2]*x[2]+x[3]*x[3])
+function _magnitude(x::Array{T,1}) where T
+    return norm(x)
 end
 
+function _unit(x::Array{T,1}) where T
+    return x / norm(x)
+end
 
-"""
-    X(x::Array{Float64,1})
-
-`Peridynamics state: Vector {i,j} operator`
-"""
-function Xij(j::Int64,i::Int64,x::Array{Float64,2})
-    return x[:,j] .- x[:,i]
+function _ij(j::Int64,i::Int64,x::Array{T,2}) where T
+    return @. x[:,j] - x[:,i]
 end
 
 #

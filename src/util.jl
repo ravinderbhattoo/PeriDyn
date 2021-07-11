@@ -1,6 +1,41 @@
 
 export horizon_correction, dilatation, dilatation_theta, influence_function, weighted_volume, cal_family!
 
+mod(X) = sqrt(sum(X.^2))
+ϵ(Y, X) = mod(Y) - mod(X)
+ϵⁱ(Y, X) = θ(Y, S) * mod(X) / 3
+ϵᵈ(Y, X) = ϵ(Y, X) - ϵⁱ(Y, X)
+
+function _θ(y::Array{Float64,2}, S::GeneralMaterial)
+    theta = zeros(Float64, size(S.volume)...)
+    j = 1::Int64
+    E_n = 0.0::Float64
+    E = 0.0::Float64
+    x = [1.0,0,0]::Array{Float64}
+    e = 0.0::Float64
+    for i in 1:size(S.x,2)
+        for k in 1:size(S.family,1)
+            if S.intact[k,i]
+                j = S.family[k,i]
+                if (j>0) & (i!=j)
+                    x = _ij(j,i,S.x)
+                    E = _magnitude(x)
+                    E_n = _magnitude(_ij(j,i,y))
+                    e = E_n - E
+                    theta[i] += influence_function(x)*E*e*S.volume[j] *horizon_correction(x,S.particle_size,S.horizon)
+                end
+            end
+        end
+    end
+    return theta
+end
+
+function θ(Y, S)
+    3 * _θ(Y, S) ./ m
+end
+
+
+
 """
     horizon_correction(dr,r,hr)
 
@@ -21,7 +56,7 @@ end
 It gives influence function factor (It will give 1/r as of now).
 """
 function influence_function(dr)
-    return 1/magnitude(dr)
+    return 1/_magnitude(dr)
 end
 
 """
@@ -36,7 +71,7 @@ end
 """
     dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
 
-It gives dilatation(theta) as given ordinary state material model.
+It gives dilatation as given ordinary state material model.
 """
 function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
     theta = zeros(Float64,size(S.volume)...)
@@ -50,9 +85,9 @@ function dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
             if S.intact[k,i]
                 j = S.family[k,i]
                 if (j>0) & (i!=j)
-                    x = Xij(j,i,S.x)
-                    E = magnitude(x)
-                    E_n = magnitude(Xij(j,i,y))
+                    x = _ij(j,i,S.x)
+                    E = _magnitude(x)
+                    E_n = _magnitude(_ij(j,i,y))
                     e = E_n - E
                     theta[i] += influence_function(x)*E*e*S.volume[j] *horizon_correction(x,S.particle_size,S.horizon)
                 end
@@ -79,7 +114,7 @@ function weighted_volume(x, volume, particle_size, family, horizon)
                 dr[1] = x[1,j]-x[1,i]
                 dr[2] = x[2,j]-x[2,i]
                 dr[3] = x[3,j]-x[3,i]
-                m[i] += influence_function(dr)*magnitude(dr)^2*horizon_correction(dr, particle_size,horizon)*volume[j]
+                m[i] += influence_function(dr)*_magnitude(dr)^2*horizon_correction(dr, particle_size,horizon)*volume[j]
             end
         end
     end
