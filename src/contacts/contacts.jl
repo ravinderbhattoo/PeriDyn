@@ -1,7 +1,7 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
-function Base.show(io::IO, i::RepulsionModel11)
+function Base.show(io::IO, i::Union{RepulsionModel11, RepulsionModel12})
     println(io, typeof(i))
     for j in fieldnames(typeof(i))
         if j in [:neighs]
@@ -82,13 +82,13 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
-                f1[:,j] .+= 0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
+                f1[:,i] .+= -repulsion_acc(x1[:,i].-x1[:,j],RM)
+                f1[:,j] .+= repulsion_acc(x1[:,i].-x1[:,j],RM)
             end
             if j==0 break end
         end
     end
-    f[:,mask1] = f1
+    f[:,mask1] .= f1
     return nothing
 end
 
@@ -158,14 +158,14 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
             a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
             for j in 1:size(x2,2)
                 a2,b2,c2 = x2[1,j],x2[2,j],x2[3,j]
-                if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)>RM.distance^2
-                else
+                if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)<RM.distance^2
                     family[j,i] = a_id[j]
                 end
             end
         end
         family = sort(family,dims=1)
         RM.neighs[1:end, mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
+        println("Average repulsive neighs: $(sum(RM.neighs .> 0.5)/size(x1, 2))")
     else
         RM.neighs[1:end, 1:end] .= 0
     end
