@@ -3,6 +3,8 @@ module PeriDyn
 using Base: Bool
 using LinearAlgebra
 
+VERBOSE = false
+
 include("./simulation.jl") # define simulation environment
 include("./operators.jl") # standars peridynamic operators (redundant)
 
