@@ -38,7 +38,7 @@ function update_acc!(env::GeneralEnv)
             m = (env.type .== j)
             mask = mask .| m
         end
-        env.f[:,mask] .+= force_density_T(env.y[:,mask],env.material_blocks[i]) 
+        env.f[:,mask] .+= force_density_T(env.y[:,mask], env.material_blocks[i]) 
     end
     for i in 1:size(env.short_range_repulsion,1)
         short_range_repulsion!(env.y,env.f,env.type,env.short_range_repulsion[i])
@@ -126,58 +126,14 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_fr
         end
 
         if i%filewrite_freq==0.0 || i==1
-            print("\nWritting data file.......................")
-            for id in 1:size(envs,1)
-                env = envs[id]
-                write_data(string(foldername,"env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
-            end
-            print("Done\n")
-            println(i/N*100,"%")
+            print_data_file!(envs, foldername, i)
         end
 
         if i%neigh_update_freq==0.0
-            println("\nUpdating neighbors for collision..................")
-            for env in envs
-                if env.state[1]==2
-                    for rm in 1:size(env.short_range_repulsion,1)
-                        update_repulsive_neighs!(env.y,env.type,env.short_range_repulsion[rm])
-                    end
-                end
-            end
+            update_neighs!(envs)
         end
+        println(round(i/N*100, digits=3),"%")
     end
-end
-
-"""
-    minimize!(env::GeneralEnv,step_size::Float64; max_iter::Int64=500,min_step_tol_per::Float64=5.0)
-
-Minimize potential energy of simulation environment.
-"""
-function minimize2!(env::GeneralEnv,step_size::Float64; max_iter::Int64=50,min_step_tol_per::Float64=5.0)
-    ref_particle_size = env.material_blocks[1].general.particle_size
-    orig_step_size = step_size
-    for i in 1:max_iter
-        update_acc!(env)
-        max_grad = maximum(abs.(env.f))
-        if max_grad*step_size < min_step_tol_per/100*ref_particle_size
-            step_size *= 2
-        elseif max_grad*step_size > ref_particle_size/2
-            step_size /= 2
-        else
-        end
-        env.y .+= step_size*env.f
-        for bc in env.boundary_conditions
-            apply_bc!(env,bc)
-        end
-
-        if (step_size>1000*orig_step_size) || (max_grad*step_size/ref_particle_size < 1.0e-6)
-            break
-        end
-        if i==max_iter
-            println("Max iter reached.")
-        end
-    end
-    env.time_step += 1
 end
 
 
@@ -187,7 +143,7 @@ function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_to
     end
     update_acc!(env)
 
-    opt = Flux.ADAM()
+    opt = Flux.ADAM(step_size)
     mask = false
     for bc in env.boundary_conditions
         if ~(bc.onlyatstart)
@@ -214,7 +170,7 @@ function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_to
             break
         end
         if i==max_iter
-            println("Maximum iteration ($max_iter) reached.")
+            println("Maximum iteration ($max_iter) reached. $x_tol_ !<= $x_tol and $f_tol_ !<= $f_tol")
         end
     end
     env.time_step += 1
@@ -226,7 +182,7 @@ end
 
 Implements quasi static simulation using minimize for each step.
 """
-function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, filewrite_freq::Int64=10, neigh_update_freq::Int64=50, file_prefix::String="datafile",start_at::Int64=0)
+function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, filewrite_freq::Int64=10, neigh_update_freq::Int64=1, file_prefix::String="datafile",start_at::Int64=0)
     foldername = filepath_(file_prefix)
     print_data_file!(envs, foldername, 0)
     update_neighs!(envs)
@@ -254,12 +210,12 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
         end
         if i%filewrite_freq==0.0 || i==1
             print_data_file!(envs, foldername, i)
-            println(i/N*100,"%")
         end
 
         if i%neigh_update_freq==0.0
             update_neighs!(envs)
         end
+        println(round(i/N*100, digits=3),"%")
     end
 end
 
@@ -278,7 +234,6 @@ function update_neighs!(envs)
             end
         end
     end
-    print("Done\n")
 end
 
 """
