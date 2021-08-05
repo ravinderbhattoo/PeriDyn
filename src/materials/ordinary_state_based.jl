@@ -22,6 +22,7 @@ end
     OrdinaryStateBasedMaterial(type::UnitRange{Int64}, general::GeneralMaterial, specific::OrdinaryStateBasedSpecific)
 """
 struct OrdinaryStateBasedMaterial <: PeridynamicsMaterial
+    name::String
     type::UnitRange{Int64}
     general::GeneralMaterial
     specific::OrdinaryStateBasedSpecific
@@ -30,9 +31,9 @@ end
 """
     PeridynamicsMaterial(gen, spc::OrdinaryStateBasedSpecific)
 """
-function PeridynamicsMaterial(gen, spc::OrdinaryStateBasedSpecific)
+function PeridynamicsMaterial(gen, spc::OrdinaryStateBasedSpecific; name="Default")
     type = minimum(gen.type):maximum(gen.type)
-    OrdinaryStateBasedMaterial(type, gen, spc)
+    OrdinaryStateBasedMaterial(name, type, gen, spc)
 end
 
 
