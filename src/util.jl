@@ -156,9 +156,11 @@ end
 Fill cells with material points.
 """
 function get_cells(x::Array{Float64,2}, horizon::Float64)
-    _min = minimum(x,dims=2)
-    _max = maximum(x,dims=2)
-    N = Int.(1 .+ floor.((_max-_min)/horizon))
+    _min = minimum(x, dims=2)
+    _max = maximum(x, dims=2)
+    _cells = @. min.(10, (_max - _min) / horizon)
+    horizon = @. (_max - _min) / _cells
+    N = Int.(1 .+ floor.((_max .- _min) ./ horizon))
     cells = [Vector{Int}() for i in 1:prod(N)]
     cell_neighs = Vector{Vector{Int}}(undef,prod(N))
     for k in 1:N[3]
@@ -169,7 +171,7 @@ function get_cells(x::Array{Float64,2}, horizon::Float64)
         end
     end
     for i in 1:size(x,2)
-        ii,jj,kk = Int.(1 .+ floor.((x[:,i].-_min)/horizon))
+        ii,jj,kk = Int.(1 .+ floor.((x[:,i].-_min) ./ horizon))
         push!(cells[cell_number(ii,jj,kk,N)],i)
     end
     return cells, cell_neighs
