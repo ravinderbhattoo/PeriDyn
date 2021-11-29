@@ -2,13 +2,12 @@
 This modules contains the boundary conditions definitions.
 """
 
-export FixBC, MoveBC, ScaleBC, ScaleFixBC, ScaleMoveBC, JustScaleBC, apply_bc!
+export FixBC, MoveBC, ScaleBC, ScaleFixBC, JustScaleBC, apply_bc!
 
 """
 Abstract class for boundary conditions.
 """
 abstract type BoundaryCondition end
-abstract type BoundaryConditionat0 end
 
 function Base.show(io::IO, i::BoundaryCondition)  
     println(io, typeof(i))
@@ -23,11 +22,10 @@ end
 struct FixBC<:BoundaryCondition
     bool::Array{Bool,1}
     start::Array{Float64,2}
-    onlyatstart::Bool
 end
 
-function FixBC(bool; onlyatstart=false)
-    FixBC(bool, zeros(Float64, 3, sum(bool)), onlyatstart)
+function FixBC(bool)
+    FixBC(bool, zeros(Float64, 3, sum(bool)))
 end
 
 function apply_bc_at0!(env, BC::FixBC)
@@ -53,11 +51,10 @@ struct MoveBC<:BoundaryCondition
     bool::Array{Bool,1}
     rate::Array{Float64,1}
     start::Array{Float64,2}
-    onlyatstart::Bool
 end
 
-function MoveBC(bool, rate; onlyatstart=false)
-    MoveBC(bool, rate, zeros(Float64, 3, sum(bool)), onlyatstart)
+function MoveBC(bool, rate)
+    MoveBC(bool, rate, zeros(Float64, 3, sum(bool)))
 end
 
 function apply_bc_at0!(env, BC::MoveBC)
@@ -84,15 +81,14 @@ struct ScaleBC<:BoundaryCondition
     rate::Array{Float64,1}
     FixPoint::Array{Float64,1}
     start::Array{Float64,2}
-    onlyatstart::Bool
 end
 
-function ScaleBC(bool, rate, FixPoint; onlyatstart=false)
-    ScaleBC(bool,rate,FixPoint,zeros(Float64, 3, sum(bool)), onlyatstart)
+function ScaleBC(bool, rate, FixPoint)
+    ScaleBC(bool,rate,FixPoint,zeros(Float64, 3, sum(bool)))
 end
 
-function ScaleBC(bool, rate; onlyatstart=false)
-    ScaleBC(bool,rate,[0.0, 0, 0],zeros(Float64, 3, sum(bool)), onlyatstart)
+function ScaleBC(bool, rate)
+    ScaleBC(bool,rate,[0.0, 0, 0],zeros(Float64, 3, sum(bool)))
 end
 
 function apply_bc_at0!(env, BC::ScaleBC)
@@ -115,42 +111,6 @@ function apply_bc!(env,BC::ScaleBC)
     env.v[:, BC.bool] = v1
 end
 
-struct ScaleMoveBC<:BoundaryCondition
-    bool::Array{Bool,1}
-    rates::Array{Float64,1}
-    FixPoint::Array{Float64,1}
-    ratem::Array{Float64,1}
-    start::Array{Float64,2}
-    onlyatstart::Bool
-end
-
-function ScaleMoveBC(bool, rates, FixPoint, ratem; onlyatstart=false )
-    ScaleMoveBC(bool,rates,FixPoint,ratem,zeros(Float64, 3, sum(bool)), onlyatstart)
-end
-
-function ScaleMoveBC(bool, rates, ratem; onlyatstart=false)
-    ScaleMoveBC(bool,rates,[0.0, 0, 0],ratem,zeros(Float64, 3, sum(bool)), onlyatstart)
-end
-
-function apply_bc_at0!(env, BC::ScaleMoveBC)
-    y1 = env.y[:, BC.bool]
-    BC.start[:, :] .= y1
-end
-
-
-"""
-    apply_bc!(env,BC::ScaleMoveBC)
-
-It scales a given material block about a given fixed point.
-"""
-function apply_bc!(env, BC::ScaleMoveBC)
-    y1 = env.y[:, BC.bool]
-    v1 = env.v[:, BC.bool]
-    y1[:, :] .= (BC.start[:, :] .- vec(BC.FixPoint)) .* (1 .+ vec(env.time_step*env.dt*BC.rates)) .+ vec(BC.FixPoint) .+ vec(env.time_step*env.dt*BC.ratem)
-    v1[:, :] .= (BC.start[:, :] .- vec(BC.FixPoint)) .* (vec(BC.rates)) .+ vec(BC.ratem)
-    env.y[:, BC.bool] = y1
-    env.v[:, BC.bool] = v1
-end
 
 # struct ScaleFixBC<:BoundaryCondition
 #     blockID::Int64

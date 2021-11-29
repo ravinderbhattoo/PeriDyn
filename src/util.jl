@@ -1,4 +1,3 @@
-
 export horizon_correction, dilatation, dilatation_theta, influence_function, weighted_volume, cal_family!
 
 mod(X) = sqrt(sum(X.^2))
@@ -234,7 +233,7 @@ function write_data(filename, every, type, pos)
         for j in 1:size(y,1)
             t = type[j]
             a,b,c = y[j,:]
-            write(file, "$t, $a, $b, $c ")
+            write(file, "$j $t, $a, $b, $c ")
             write(file,"\n")
         end
     end
@@ -253,7 +252,7 @@ function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2})
     for j in 1:size(y,2)
         t = type[j]
         a,b,c = y[1,j],y[2,j],y[3,j]
-        write(file, "$t, $a, $b, $c ")
+        write(file, "$j $t, $a, $b, $c ")
         write(file,"\n")
     end
     close(file)
@@ -274,7 +273,7 @@ function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2},
         a,b,c = y[1,j],y[2,j],y[3,j]
         a1,b1,c1 = v[1,j],v[2,j],v[3,j]
         a2,b2,c2 = f[1,j],f[2,j],f[3,j]
-        write(file, "$t, $a, $b, $c, $a1, $b1, $c1, $a2, $b2, $c2 ")
+        write(file, "$j $t, $a, $b, $c, $a1, $b1, $c1, $a2, $b2, $c2 ")
         write(file,"\n")
     end
     close(file)
@@ -352,4 +351,52 @@ function make_matrix_gm(S::Array{T,1}) where T
         end 
     end 
     return bs
+end
+
+"""
+    make_NN(layers::Tuple{T}, N) where T
+
+Create an symmetrical NxN matrix from a vector of length N(N+1)/2.    
+
+================
+## Returns
+    M :: Matrix
+"""
+function make_NN(layers::T, N) where T
+    L = length(layers)
+    bs = []
+    for i in 1:N 
+        for j in i:N 
+            push!(bs, make_NN(layers))
+        end 
+    end 
+    SymMat(bs)
+end
+
+struct SymMat
+    v
+    N
+end
+
+function SymMat(x)
+    L = length(x)
+    SymMat(x, Int((-1+sqrt(1+4*2*L))/2))
+end
+
+function Base.getindex(m::SymMat, i::Int)
+    m.v[i]    
+end
+
+function Base.getindex(m::SymMat, i::Int, j::Int)
+    @assert((i<=m.N) & (j <=m.N))
+    if j>i
+        i, j = j, i
+    end
+    ind = Int(i*(i-1)/2 + j)
+    m.v[ind]    
+end
+
+function make_NN(layers::T; act=Flux.relu) where T  
+    L = length(layers)
+    Chain([Dense(layers[i], layers[i+1], act) for i in 1:L-2]..., Dense(layers[end-1], layers[end]))
 end

@@ -1,7 +1,5 @@
-
 export save_state!, update_acc!, velocity_verlet_step!, velocity_verlet!, minimize!, quasi_static!, update_neighs!
-using Flux
-using Dates
+
 
 function filepath_(file_prefix)
     dtime = replace(string(ceil(Dates.now(), Dates.Second(1))), ":"=>"-")
