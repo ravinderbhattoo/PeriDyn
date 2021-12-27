@@ -21,6 +21,7 @@ include("./materials/bond_based.jl")
 include("./materials/ordinary_state_based.jl")
 include("./materials/skip_specific.jl")
 include("./materials/pairwiseNN.jl")
+include("./materials/EPS.jl")
 
 # contact models
 include("./contacts/contacts.jl")
