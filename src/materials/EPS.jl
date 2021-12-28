@@ -65,8 +65,9 @@ function force_density_T(y::Array{Float64,2}, mat::ElastoPlasticSolidMaterial)
     S = mat.general
     m = mat.general.weighted_volume
     theta = dilatation(y, S, m)
-    td_trial = trial_force_density_deviatoric(y, theta, mat)
+    td_norm = td_norm_fn(y, theta, mat)
     δ = S.horizon
+    edp = mat.specific.edp
     N = size(S.x, 2)
     for i in 1:N
         for k in 1:size(S.family,1)
@@ -82,21 +83,29 @@ function force_density_T(y::Array{Float64,2}, mat::ElastoPlasticSolidMaterial)
                 K = mat.specific.bulk_modulus[type1, type2]
                 G = mat.specific.shear_modulus[type1, type2]
                 σ = mat.specific.σy[type1, type2]
-                pyf, ψ = plastic_yield_function(td_trial[i], σ, δ)
-                if pyf < 0
-                    td = td_trial[i]
-                else
-                    α = 15*G/m[i]
-                    Δλ = 1/α*(mod(td_trial[i])/sqrt(2*ψ) -1)
-                    td = sqrt(2*ψ) * td_trial[i] / mod(td_trial[i])
-                    edp[i] = edp[i] + Δλ*(td[i])
-                end
                 X[1],X[2],X[3] = S.x[1,j]-S.x[1,i],S.x[2,j]-S.x[2,i],S.x[3,j]-S.x[3,i]
                 Y[1],Y[2],Y[3] = y[1,j]-y[1,i],y[2,j]-y[2,i],y[3,j]-y[3,i]
-                e = (_magnitude(Y) - _magnitude(X))
+                _Y, _X = _magnitude(Y), _magnitude(X)
                 xij = _magnitude(X)::Float64
                 wij = influence_function(X)::Float64
                 wji = influence_function(-X)::Float64
+
+                e = _Y - _X
+                ed = e - theta[i] * _X / 3
+                ee = ed - edp[i]
+
+                td_trial = 15*G*(ee*wji/m[i]+ee*wji/m[j])
+
+                pyf, ψ = plastic_yield_function(td_trial, σ, δ)
+
+                if pyf < 0
+                    td = td_trial
+                else
+                    α = 15*G/m[i]
+                    Δλ = 1/α*(mod(td_norm[i])/sqrt(2*ψ) -1)
+                    td = sqrt(2*ψ) * td_trial / td_norm
+                    edp[i] = edp[i] + Δλ*(td)
+                end
                 if (e/xij) < mat.specific.critical_stretch[type1, type2]
 
                     t = (3*K)*(theta[i]*xij*wij/m[i]+theta[j]*xij*wji/m[j])  
@@ -134,9 +143,9 @@ end
 
 
 """
-    trial_force_density_deviatoric
+    td_norm_fn
 """
-function trial_force_density_deviatoric(y, theta, mat)
+function td_norm_fn(y, theta, mat)
     S = mat.general
     types = mat.general.type
     intact = S.intact
@@ -175,9 +184,8 @@ function trial_force_density_deviatoric(y, theta, mat)
             if s < mat.specific.critical_stretch[type1, type2]
                 K = mat.specific.bulk_modulus[type1, type2]
                 G = mat.specific.shear_modulus[type1, type2]
-                t = 15*G*(ee*wji/m[i]+ee*wji/m[j])
-                t = t*S.volume[i]
-                return t
+                td = 15*G*(ee*wji/m[i]+ee*wji/m[j])
+                return td
             else
                 intact[k,i] = false
                 return 0.0
@@ -187,7 +195,7 @@ function trial_force_density_deviatoric(y, theta, mat)
         end
     end
 
-    inner_map(i, inds) = sum(map((j)-> with_if_cal_td_norm(i,j), inds))
+    inner_map(i, inds) = norm(map((j)-> with_if_cal_td_norm(i,j), inds))
     outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)
     return outer_map(ARGS)
 end
@@ -198,6 +206,7 @@ end
 """
 function plastic_yield_function(td, σ, δ)
     ψ = 25σ^2 / (8 * pi * δ^5)
-    return mod(td)^2/2 - ψ, ψ 
+    pyf = td^2/2 - ψ
+    return pyf, ψ 
 end
 #
