@@ -195,7 +195,7 @@ function cal_family!(family::Array{Int64,2},x::Array{Float64,2}, horizon::Float6
                 for fa_id in 1:length(cells[neighs])
                     fa = cells[neighs][fa_id]
                     a2,b2,c2 = x[1,fa], x[2,fa], x[3,fa]
-                    if 1e-4<((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))<horizon^2
+                    if 1e-9<((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))<horizon^2
                         family[ind,ca] = fa
                         ind += 1
                     end
@@ -264,7 +264,7 @@ end
 
 It writes the data file.
 """
-function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2}, v::Array{Float64,2}, f::Array{Float64,2},)
+function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2}, v::Array{Float64,2}, f::Array{Float64,2},intact::Array{Float64,1})
     file = open(filename, "w+")
     N = size(y,2)
     write(file, "$N \n\n")
@@ -273,7 +273,8 @@ function write_data(filename::String, type::Array{Int64,1}, y::Array{Float64,2},
         a,b,c = y[1,j],y[2,j],y[3,j]
         a1,b1,c1 = v[1,j],v[2,j],v[3,j]
         a2,b2,c2 = f[1,j],f[2,j],f[3,j]
-        write(file, "$j $t, $a, $b, $c, $a1, $b1, $c1, $a2, $b2, $c2 ")
+        d1=intact[j]
+        write(file, "$j, $t, $a, $b, $c, $a1, $b1, $c1, $a2, $b2, $c2, $d1 ")
         write(file,"\n")
     end
     close(file)

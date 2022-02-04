@@ -9,9 +9,9 @@ end
 
 """
 """
-function save_state!(filename, env)
+function save_state!(filename, env, intac0)
     update_acc!(env)
-    write_data(filename, env.type, env.y, env.v, env.f)
+    write_data(filename, env.type, env.y, env.v, env.f,vec(intac0./intac0),)
     print("Initial state saved.")
 end
 
@@ -95,10 +95,16 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_fr
     end
     print("Done\n")
     N = N + start_at
+    intac0=Array{Float64,1}
+
     for id in 1:size(envs,1)
         env = envs[id]
+        intac0= sum(env.material_blocks[1].general.intact,dims=1)
+        for mat in env.material_blocks[2:end]
+            intac0 = hcat(intac0,sum(mat.general.intact,dims=1))
+        end
         filename = string(foldername,"env_",env.id,"_step_",0,".data")
-        save_state!(filename, env)
+        save_state!(filename, env, intac0)
     end
     for id in 1:size(envs,1)
         if envs[id].state==2
@@ -124,7 +130,7 @@ function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_fr
         end
 
         if i%filewrite_freq==0.0 || i==1
-            print_data_file!(envs, foldername, i)
+            print_data_file!(envs, foldername, i,intac0)
         end
 
         if i%neigh_update_freq==0.0
@@ -239,11 +245,15 @@ end
 
 Writes data file to disk.
 """
-function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64)
+function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64,intac0::Array{Int64,2})
     print("\nWritting data file................................")
     for id in 1:size(envs,1)
         env = envs[id]
-        write_data(string(file_prefix,"env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f)
+        intact= sum(env.material_blocks[1].general.intact,dims=1)
+        for mat in env.material_blocks[2:end]
+            intact = hcat(intact,sum(mat.general.intact,dims=1))
+        end
+        write_data(string(file_prefix,"env_",env.id,"_step_",i,".data"),env.type,env.y,env.v,env.f,vec(intact./intac0))
     end
     print("Done\n")
 end

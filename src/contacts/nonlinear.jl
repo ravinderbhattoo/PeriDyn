@@ -53,8 +53,8 @@ end
 Calculates repulsive acceleration for 1-2 materials block interaction.
 """
 function repulsion_acc(dr,RepMod::NonLinearRepulsionModel12)
-    mag_dr = _magnitude(dr) + 1.0e-10
-    del_x = RepMod.equi_dist - mag_dr
+    mag_dr = _magnitude(dr) + 1.0e-12
+    del_x = (RepMod.equi_dist - mag_dr)
     if del_x<0
         return zeros(size(dr)...)
     else
@@ -69,10 +69,18 @@ end
 Calculates repulsive acceleration for 1-1 materials block interaction.
 """
 function repulsion_acc(dr,RepMod::NonLinearRepulsionModel11)
-    del_x = -1+RepMod.material.particle_size/_magnitude(dr)
+    mag_dr = _magnitude(dr) + 1.0e-12
+    del_x = (RepMod.material.particle_size - mag_dr)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -(RepMod.stifness*del_x^RepMod.exponent).*dr
+        return -(RepMod.stifness*del_x^RepMod.exponent).*dr/mag_dr
     end
 end
+#     del_x = -1+RepMod.material.particle_size/_magnitude(dr)
+#     if del_x<0
+#         return zeros(size(dr)...)
+#     else
+#         return -(RepMod.stifness*del_x^RepMod.exponent).*dr
+#     end
+# end
