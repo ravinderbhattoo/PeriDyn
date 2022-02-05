@@ -184,7 +184,6 @@ SOLVERS[:vv] = velocity_verlet!
 
 
 function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_tol::Float64=1.0e-6, f_tol::Float64=1.0e-6)
-    mkpath(out_dir)
     for bc in env.boundary_conditions
         apply_bc!(env, bc)
     end
