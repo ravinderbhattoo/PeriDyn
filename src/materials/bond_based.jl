@@ -29,11 +29,11 @@ function PeridynamicsMaterial(gen, spc::BondBasedSpecific; name="Default")
 end
 
 
-# """
-#     force_density_T(mat::BondBasedMaterial)
+"""
+    force_density_T(mat::BondBasedMaterial)
 
-# Calculates force density (actually acceleration) for bond based material type.
-# """
+Calculates force density (actually acceleration) for bond based material type.
+"""
 function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial)
     types = mat.general.type
     x = mat.general.x 
@@ -43,13 +43,19 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial)
     M = size(family, 1)
     ARGS = map((i) -> (i, 1:M), 1:N)    
 
+    function cal_force_ij(f, Y, inp)
+        M = Y./@_magnitude(Y)
+        t = f(inp)
+        return t.*M    
+    end    
+
     function with_if_cal_force_ij(i, k)
         if intact[k,i]
             j = family[k,i]
             X = [x[1,j]-x[1,i],x[2,j]-x[2,i],x[3,j]-x[3,i]]
             Y = [y[1,j]-y[1,i],y[2,j]-y[2,i],y[3,j]-y[3,i]]
-            _X = _magnitude(X)
-            _Y = _magnitude(Y)
+            _X = @_magnitude(X)
+            _Y = @_magnitude(Y)
             ext = _Y - _X
             s = ext/_X
             type1 = types[i]- mat.type.start + 1
@@ -73,49 +79,5 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial)
     return hcat(outer_map(ARGS)...)
 end
 
-function cal_force_ij(f, Y, inp)
-    M = Y./_magnitude(Y)
-    t = f(inp)
-    return t.*M    
-end
 
 
-
-# function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial)
-#     S = mat.general
-#     types = mat.general.type
-#     X = Float64[1.0,0.0,0.0]
-#     Y = Float64[1.0,0.0,0.0]
-#     force = zeros(size(S.x)...)
-#     @parallel for i in 1:size(S.x,2)
-#         for k in 1:size(S.family,1)
-#             if !S.intact[k,i]
-#                 force[1,i] += 0.0
-#                 force[2,i] += 0.0
-#                 force[3,i] += 0.0
-#             else
-#                 j = S.family[k,i]::Int64
-#                 X[1],X[2],X[3] = S.x[1,j]-S.x[1,i],S.x[2,j]-S.x[2,i],S.x[3,j]-S.x[3,i]
-#                 Y[1],Y[2],Y[3] = y[1,j]-y[1,i],y[2,j]-y[2,i],y[3,j]-y[3,i]
-#                 s = (_magnitude(Y) - _magnitude(X))/_magnitude(X)
-#                 type1 = types[i]- mat.type.start + 1
-#                 type2 = types[j] - mat.type.start + 1
-#                 if s < mat.specific.critical_stretch[type1, type2]
-#                     M = Y./_magnitude(Y)
-#                     t = mat.specific.bond_stiffness[type1, type2]*s
-#                     force[:,i] .+= t.*M
-#                 else
-#                     force[1,i] += 0.0
-#                     force[2,i] += 0.0
-#                     force[3,i] += 0.0
-#                     S.intact[k,i] = false
-#                 end
-#             end
-#         end
-#     end
-#     return force
-# end
-
-
-
-# #

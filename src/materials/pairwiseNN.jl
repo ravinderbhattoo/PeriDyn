@@ -23,13 +23,12 @@ struct PairwiseNNMaterial <: PeridynamicsMaterial
     specific::PairwiseNNSpecific
 end
 
-function PeridynamicsMaterial(gen, spc::PairwiseNNSpecific; name="Default")
-    type = minimum(gen.type):maximum(gen.type)
+function PeridynamicsMaterial(name, type, gen, spc)
     PairwiseNNMaterial(name, type, gen, spc)
 end
 
 function cal_force_ij(f, Y, inp)
-    M = Y./_magnitude(Y)
+    M = Y./@_magnitude(Y)
     t = f(inp)
     return t.*M    
 end
@@ -53,8 +52,8 @@ function force_density_T(y::Array{Float64,2}, mat::PairwiseNNMaterial)
             j = family[k,i]
             X = [x[1,j]-x[1,i],x[2,j]-x[2,i],x[3,j]-x[3,i]]
             Y = [y[1,j]-y[1,i],y[2,j]-y[2,i],y[3,j]-y[3,i]]
-            _X = _magnitude(X)
-            _Y = _magnitude(Y)
+            _X = @_magnitude(X)
+            _Y = @_magnitude(Y)
             ext = _Y - _X
             s = ext/_X
             type1 = types[i]- mat.type.start + 1
