@@ -2,7 +2,7 @@
 This module contains LJ replusive model definitions.
 """
 
-export LJRepulsionModel, LJRepulsionModel11, LJRepulsionModel12, repulsion_acc
+export LJRepulsionModel, LJRepulsionModel11, LJRepulsionModel12, repulsion_force
 
 
 struct LJRepulsionModel12<:RepulsionModel12
@@ -48,12 +48,12 @@ function LJRepulsionModel(alpha, epsilon, mat1::PeridynamicsMaterial; distanceX=
 end
 
 """
-    repulsion_acc(dr, RepMod::LJRepulsionModel12)
+    repulsion_force(dr, RepMod::LJRepulsionModel12)
 
 Calculates repulsive acceleration for 1-2 materials block interaction.
 """
-function repulsion_acc(dr, RepMod::LJRepulsionModel12)
-    mag_dr = _magnitude(dr) + 1.0e-10
+function repulsion_force(dr, RepMod::LJRepulsionModel12)
+    mag_dr = @_magnitude(dr) + 1.0e-10
     del_x = RepMod.equi_dist - mag_dr
     if del_x<0
         return zeros(size(dr)...)
@@ -64,12 +64,12 @@ end
 
 
 """
-    repulsion_acc(dr, RepMod::LJRepulsionModel11)
+    repulsion_force(dr, RepMod::LJRepulsionModel11)
 
 Calculates repulsive acceleration for 1-1 materials block interaction.
 """
-function repulsion_acc(dr, RepMod::LJRepulsionModel11)
-    del_x = -1+RepMod.material.particle_size/_magnitude(dr)
+function repulsion_force(dr, RepMod::LJRepulsionModel11)
+    del_x = -1+RepMod.material.particle_size/@_magnitude(dr)
     if del_x<0
         return zeros(size(dr)...)
     else
