@@ -48,7 +48,7 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial)
         t = f(inp)
         return t.*M    
     end    
-
+    
     function with_if_cal_force_ij(i, k)
         if intact[k,i]
             j = family[k,i]
@@ -72,8 +72,8 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial)
     end
 
     # inner_map(i, inds) = pmapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
-
-    inner_map(i, inds) = sum(map((j)-> with_if_cal_force_ij(i,j), inds))
+    
+    inner_map(i, inds) = sum(map((j)-> with_if_cal_force_ij(i,j), inds)) / mat.general.volume[i]
     outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)
 
     return hcat(outer_map(ARGS)...)

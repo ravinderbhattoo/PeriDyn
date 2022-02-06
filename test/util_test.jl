@@ -2,8 +2,8 @@
     @safetestset "b1" begin
         using PeriDyn, PDMesh
         PD = PeriDyn
-
-        x0, v0, y0, vol0, type0 = create(PDMesh.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
+        
+        x0, v0, y0, vol0, type0 = unpack(create(PDMesh.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1))
         gen_mat = PD.GeneralMaterial(x0, v0, y0, vol0, type0, 3.0)
 
         # horizon correction

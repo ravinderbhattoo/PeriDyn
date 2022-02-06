@@ -58,7 +58,6 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
             if j>0
                 force = repulsion_force(x1[:, i].-x2[:, j], RM)
                 f1[:,i] .+= -force / vol1[i]
-                f2[:,j] .+= force / vol2[j]
             end
             if j==0 break end
         end
@@ -88,7 +87,6 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel11)
             if j>0
                 force = repulsion_force(x1[:,i].-x1[:,j], RM)
                 f1[:,i] .+= -force / vol1[i]
-                f1[:,j] .+= force / vol1[j]
             end
             if j==0 break end
         end
