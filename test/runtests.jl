@@ -1,6 +1,7 @@
 using Test, SafeTestsets
-using PeriDyn
+using PeriDyn, PDMesh
 PD = PeriDyn
+
 
 include("./util_test.jl")
 include("./contacts_test.jl")

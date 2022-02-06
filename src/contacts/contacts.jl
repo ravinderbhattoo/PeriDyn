@@ -1,6 +1,16 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
+function Base.show(io::IO, i::Union{RepulsionModel11, RepulsionModel12})
+    println(io, typeof(i))
+    for j in fieldnames(typeof(i))
+        if j in [:neighs]
+        else
+        println(io, j, ": ", getproperty(i, j))
+        end
+    end
+end
+
 export short_range_repulsion!, collision_box, update_repulsive_neighs!
 
 
@@ -27,25 +37,34 @@ Updates (inplace) the repulsive acceleration of material points.
 julia> short_range_repulsion!(y,f,type,RepusionModel)
 ```
 """
-function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
-    mask1 = type.==RM.pair[1]
-    mask2 = type.==RM.pair[2]
-    f1 = f[:,mask1]
-    f2 = f[:,mask2]
-    x1 = y[:,mask1]
-    x2 = y[:,mask2]
-    for i in 1:size(RM.neighs,2)
-        for k in 1:size(RM.neighs,1)
+function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
+    mask1 = false
+    for i in RM.pair[1]
+        mask1 = mask1 .| (type .== i)
+    end
+    mask2 = false
+    for i in RM.pair[2]
+        mask2 = mask2 .| (type .== i)
+    end
+    f1 = f[:, mask1]
+    f2 = f[:, mask2]
+    x1 = y[:, mask1]
+    x2 = y[:, mask2]
+    vol1 = vol[mask1]
+    vol2 = vol[mask2]
+    for i in 1:size(RM.neighs, 2)
+        for k in 1:size(RM.neighs, 1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -repulsion_acc(x1[:,i].-x2[:,j],1,RM)
-                f2[:,j] .+= repulsion_acc(x1[:,i].-x2[:,j],2,RM)
+                force = repulsion_force(x1[:, i].-x2[:, j], RM)
+                f1[:,i] .+= -force / vol1[i]
+                f2[:,j] .+= force / vol2[j]
             end
             if j==0 break end
         end
     end
-    f[:,mask1] = f1
-    f[:,mask2] = f2
+    f[:, mask1] .= f1 
+    f[:, mask2] .= f2 
     return nothing
 end
 
@@ -54,38 +73,27 @@ end
     short_range_repulsion!(y,f,type,RepusionModel)
 
 Updates (inplace) the repulsive acceleration of material points.
-
-**`1-2 repulsion`**
-
-# Input Args:
-- `y :: Positions of material point`
-- `f :: Acceleration of material points`
-- `type :: Type of material points`
-- `RepulsionModel :: Repulsion model (see contacts.jl for more details)`
-
-# Output Args:
-- `Noting (Inplace updation of f (acceleration))`
-
-# Examples
-```jldoctest
-julia> short_range_repulsion!(y,f,type,RepusionModel)
-```
 """
-function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
-    mask1 = type.==RM.type
+function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel11)
+    mask1 = false
+    for j in RM.type
+        mask1 = mask1 .| (type .== j)
+    end
     f1 = f[:,mask1]
     x1 = y[:,mask1]
+    vol1 = vol[mask1]
     for i in 1:size(RM.neighs,2)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
-                f1[:,j] .+= 0.5*repulsion_acc(x1[:,i].-x1[:,j],RM)
+                force = repulsion_force(x1[:,i].-x1[:,j], RM)
+                f1[:,i] .+= -force / vol1[i]
+                f1[:,j] .+= force / vol1[j]
             end
             if j==0 break end
         end
     end
-    f[:,mask1] = f1
+    f[:,mask1] .= f1 
     return nothing
 end
 
@@ -133,30 +141,39 @@ Update neighbour list for repulsive force calculation (1-2 interaction).
 
 """
 function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
-    x11 = y[:,type.==RM.pair[1]]
-    x22 = y[:,type.==RM.pair[2]]
+    _mask1 = false
+    for i in RM.pair[1]
+        _mask1 = _mask1 .| (type .== i)
+    end
+    _mask2 = false
+    for i in RM.pair[2]
+        _mask2 = _mask2 .| (type .== i)
+    end
+    x11 = y[:, _mask1]
+    x22 = y[:, _mask2]
     box_min, box_max, ifcheck = collision_box(x11, x22, RM.distance)
     if ifcheck
         mask1 = reshape(prod(x11.>box_min,dims=1) .* prod(x11.<box_max,dims=1),:)
         mask2 = reshape(prod(x22.>box_min,dims=1) .* prod(x22.<box_max,dims=1),:)
-        x1 = x11[1:end,mask1]
-        x2 = x22[1:end,mask2]
+        x1 = x11[1:end, mask1]
+        x2 = x22[1:end, mask2]
         a_id = collect(1:size(x22,2))[mask2]
-        family = zeros(Float64, max(RM.max_neighs,size(x2,2)),size(x1,2))
+        family = zeros(Float64, max(RM.max_neighs, size(x2,2)), size(x1,2))
         for i in 1:size(x1,2)
             a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
             for j in 1:size(x2,2)
                 a2,b2,c2 = x2[1,j],x2[2,j],x2[3,j]
-                if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)>RM.distance^2
-                else
+                if (a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2)<RM.distance^2
                     family[j,i] = a_id[j]
                 end
             end
         end
         family = sort(family,dims=1)
-        RM.neighs[1:end,mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
+        RM.neighs[1:end, mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
+        println("Average repulsive neighs: $(sum(RM.neighs .> 0.5)/size(x1, 2))")
     else
-        RM.neighs[1:end,1:end] = 0
+        RM.neighs[1:end, 1:end] .= 0
+        println("No repulsive neighs.")
     end
 end
 
@@ -167,11 +184,15 @@ end
 Update neighbour list for repulsive force calculation (1-1 interaction).
 
 """
-function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
-    x = y[:,type.==RM.type]
+function update_repulsive_neighs!(y, type, RM::RepulsionModel11)
+    mask = false
+    for j in RM.type
+        mask = mask .| (type .== j)
+    end
+    x = y[:, mask]
     fill!(RM.neighs,0)
-    cells, cell_neighs = get_cells(x,RM.distance)
-    for cell_i in 1:length(cells)
+    cells, cell_neighs = get_cells(x, RM.distance)
+    Threads.@threads for cell_i in 1:length(cells)
         for ca_id in 1:length(cells[cell_i])
             ind = 1
             ca = cells[cell_i][ca_id]
@@ -203,8 +224,13 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel11)
             end
         end
     end
+    println("Average repulsive neighs: $(sum(RM.neighs .> 0.5)/size(x, 2))")
 end
 
+
+include("./LJ.jl")
+include("./nonlinear.jl")
+include("./linear.jl")
 
 
 #

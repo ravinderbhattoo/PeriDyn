@@ -1,1 +1,5 @@
 *.data
+*.ipynb_checkpoints
+.fuse*
+docs/build
+output

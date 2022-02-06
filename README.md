@@ -1,8 +1,14 @@
 # PeriDyn
 Peridynamics implementation in Julia.
 
-
+## Block Plate Collision
 ![plate_block](/resources/plate_block.gif)
+
+## Fracture
+![fracture](/resources/notch.gif)
+
+## Two Blocks Collision
+![collision](/resources/2blocks.gif)
 
 ## Contributions
 - [Ravinder Bhattoo](https://github.com/ravinderbhattoo)
