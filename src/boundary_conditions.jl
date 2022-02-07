@@ -24,12 +24,18 @@ function check!(BC::T, env) where T <: BoundaryCondition
     # error("check! method Not implemented for $(T)")
 end
 
+
 struct FixBC<:BoundaryCondition
     bool::Array{Bool,1}
     start::Array{Float64,2}
     onlyatstart::Bool
 end
 
+
+"""
+    FixBC(bool; onlyatstart=false)
+
+"""
 function FixBC(bool; onlyatstart=false)
     FixBC(bool, zeros(Float64, 3, sum(bool)), onlyatstart)
 end
