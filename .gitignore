@@ -2,4 +2,7 @@
 *.ipynb_checkpoints
 .fuse*
 docs/build
+*.png
+*.pfig
+.vscode
 output
