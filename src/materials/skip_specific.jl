@@ -29,8 +29,7 @@ end
 """
     PeridynamicsMaterial(gen, spc::SkipSpecific)
 """
-function PeridynamicsMaterial(gen, spc::SkipSpecific; name="Default")
-    type = minimum(gen.type):maximum(gen.type)
+function PeridynamicsMaterial(name, type, gen, spc::SkipSpecific)
     SkipMaterial(name, type, gen, spc)
 end
 

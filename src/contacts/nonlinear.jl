@@ -2,7 +2,7 @@
 This module contains NonLinear replusive model definitions.
 """
 
-export NonLinearRepulsionModel, NonLinearRepulsionModel11, NonLinearRepulsionModel12, repulsion_acc
+export NonLinearRepulsionModel, NonLinearRepulsionModel11, NonLinearRepulsionModel12, repulsion_force
 
 
 struct NonLinearRepulsionModel12<:RepulsionModel12
@@ -48,12 +48,12 @@ function NonLinearRepulsionModel(exponent,stifness, mat1::PeridynamicsMaterial; 
 end
 
 """
-    repulsion_acc(dr,RepMod::NonLinearRepulsionModel12)
+    repulsion_force(dr,RepMod::NonLinearRepulsionModel12)
 
 Calculates repulsive acceleration for 1-2 materials block interaction.
 """
-function repulsion_acc(dr,RepMod::NonLinearRepulsionModel12)
-    mag_dr = _magnitude(dr) + 1.0e-10
+function repulsion_force(dr,RepMod::NonLinearRepulsionModel12)
+    mag_dr = @_magnitude(dr) + 1.0e-10
     del_x = RepMod.equi_dist - mag_dr
     if del_x<0
         return zeros(size(dr)...)
@@ -64,12 +64,12 @@ end
 
 
 """
-    repulsion_acc(dr,RepMod::NonLinearRepulsionModel11)
+    repulsion_force(dr,RepMod::NonLinearRepulsionModel11)
 
 Calculates repulsive acceleration for 1-1 materials block interaction.
 """
-function repulsion_acc(dr,RepMod::NonLinearRepulsionModel11)
-    del_x = -1+RepMod.material.particle_size/_magnitude(dr)
+function repulsion_force(dr,RepMod::NonLinearRepulsionModel11)
+    del_x = -1+RepMod.material.particle_size/@_magnitude(dr)
     if del_x<0
         return zeros(size(dr)...)
     else

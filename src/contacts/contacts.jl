@@ -37,7 +37,7 @@ Updates (inplace) the repulsive acceleration of material points.
 julia> short_range_repulsion!(y,f,type,RepusionModel)
 ```
 """
-function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
+function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
     mask1 = false
     for i in RM.pair[1]
         mask1 = mask1 .| (type .== i)
@@ -46,22 +46,25 @@ function short_range_repulsion!(y,f,type,RM::RepulsionModel12)
     for i in RM.pair[2]
         mask2 = mask2 .| (type .== i)
     end
-    f1 = f[:,mask1]
-    f2 = f[:,mask2]
-    x1 = y[:,mask1]
-    x2 = y[:,mask2]
-    for i in 1:size(RM.neighs,2)
-        for k in 1:size(RM.neighs,1)
+    f1 = f[:, mask1]
+    f2 = f[:, mask2]
+    x1 = y[:, mask1]
+    x2 = y[:, mask2]
+    vol1 = vol[mask1]
+    vol2 = vol[mask2]
+    for i in 1:size(RM.neighs, 2)
+        for k in 1:size(RM.neighs, 1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -repulsion_acc(x1[:,i].-x2[:,j], RM)
-                f2[:,j] .+= repulsion_acc(x1[:,i].-x2[:,j], RM)
+                force = repulsion_force(x1[:, i].-x2[:, j], RM)
+                f1[:,i] .+= -force / vol1[i]
+                f2[:,j] .+= force / vol2[j]
             end
             if j==0 break end
         end
     end
-    f[:, mask1] .= f1
-    f[:, mask2] .= f2
+    f[:, mask1] .= f1 
+    f[:, mask2] .= f2 
     return nothing
 end
 
@@ -71,24 +74,26 @@ end
 
 Updates (inplace) the repulsive acceleration of material points.
 """
-function short_range_repulsion!(y,f,type,RM::RepulsionModel11)
+function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel11)
     mask1 = false
     for j in RM.type
         mask1 = mask1 .| (type .== j)
     end
     f1 = f[:,mask1]
     x1 = y[:,mask1]
+    vol1 = vol[mask1]
     for i in 1:size(RM.neighs,2)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                f1[:,i] .+= -repulsion_acc(x1[:,i].-x1[:,j],RM)
-                f1[:,j] .+= repulsion_acc(x1[:,i].-x1[:,j],RM)
+                force = repulsion_force(x1[:,i].-x1[:,j], RM)
+                f1[:,i] .+= -force / vol1[i]
+                f1[:,j] .+= force / vol1[j]
             end
             if j==0 break end
         end
     end
-    f[:,mask1] .= f1
+    f[:,mask1] .= f1 
     return nothing
 end
 
@@ -168,6 +173,7 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
         println("Average repulsive neighs: $(sum(RM.neighs .> 0.5)/size(x1, 2))")
     else
         RM.neighs[1:end, 1:end] .= 0
+        println("No repulsive neighs.")
     end
 end
 
@@ -185,8 +191,8 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel11)
     end
     x = y[:, mask]
     fill!(RM.neighs,0)
-    cells, cell_neighs = get_cells(x,RM.distance)
-    for cell_i in 1:length(cells)
+    cells, cell_neighs = get_cells(x, RM.distance)
+    Threads.@threads for cell_i in 1:length(cells)
         for ca_id in 1:length(cells[cell_i])
             ind = 1
             ca = cells[cell_i][ca_id]

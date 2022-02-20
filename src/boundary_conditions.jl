@@ -2,7 +2,7 @@
 This modules contains the boundary conditions definitions.
 """
 
-export FixBC, MoveBC, ScaleBC, ScaleFixBC, ScaleMoveBC, JustScaleBC, apply_bc!
+export FixBC, MoveBC, ToFroBC, ScaleBC, ScaleFixBC, ScaleMoveBC, JustScaleBC, apply_bc!
 
 """
 Abstract class for boundary conditions.
@@ -18,6 +18,10 @@ function Base.show(io::IO, i::BoundaryCondition)
         println(io, j, ": ", getproperty(i, j))
         end
     end
+end
+
+function check!(BC::T, env) where T <: BoundaryCondition
+    # error("check! method Not implemented for $(T)")
 end
 
 struct FixBC<:BoundaryCondition
@@ -71,13 +75,47 @@ end
 Applies moving boundary condition to a given material block. Material will move with the given rate (constant velocity).
 """
 function apply_bc!(env,BC::MoveBC)
+    env.y[:, BC.bool] .= BC.start .+ vec(env.time_step*env.dt*BC.rate)
+    env.v[:, BC.bool] .= vec(BC.rate)
+end
+
+struct ToFroBC<:BoundaryCondition
+    bool::Array{Bool,1}
+    rate::Array{Float64,1}
+    direction::Ref{Int64}
+    freq::Int64
+    applyafter::Int64
+    onlyatstart::Bool
+end
+
+function ToFroBC(bool, rate, freq; applyafter=0, onlyatstart=false)
+    ToFroBC(bool, rate, Ref(1), freq, applyafter, onlyatstart)
+end
+
+function apply_bc_at0!(env, BC::ToFroBC)
+end
+
+"""
+    apply_bc!(env,BC::ToFroBC)
+
+Applies to-fro boundary condition to a given material block. Material will move with the given rate (constant velocity).
+"""
+function apply_bc!(env, BC::ToFroBC)
     y1 = env.y[:, BC.bool]
     v1 = env.v[:, BC.bool]
-    y1[:, :] .= BC.start .+ vec(env.time_step*env.dt*BC.rate)
-    v1[:, :] .= vec(BC.rate)
+    y1[:, :] .+=  vec(env.dt*BC.direction[]*BC.rate) .- env.dt*v1
+    v1[:, :] .= vec(BC.direction[]*BC.rate)
     env.y[:, BC.bool] = y1
     env.v[:, BC.bool] = v1
 end
+
+
+function check!(BC::ToFroBC, env)
+    if ( env.time_step > BC.applyafter ) & (env.time_step % BC.freq == 0)
+        BC.direction[] = -1*BC.direction[]
+    end    
+end
+
 
 struct ScaleBC<:BoundaryCondition
     bool::Array{Bool,1}
