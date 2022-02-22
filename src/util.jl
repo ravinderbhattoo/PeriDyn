@@ -66,7 +66,7 @@ function dilatation_theta(y::Array{Float64,2}, S::GeneralMaterial)
         extention = _Y - _X
         return influence_function(X) * _X * extention * S.volume[j] * horizon_correction(X, S.particle_size, S.horizon)
     end
-
+    
     inner_map(i, js) = mapreduce((j) -> with_if_cal_theta_ij(i, j), +, js, init = 0.0)
     return Folds.map((i) -> inner_map(i, family[intact[:, i], i]), 1:N)
 
@@ -371,12 +371,12 @@ Create an symmetrical NxN matrix from a vector of length N(N+1)/2.
 ## Returns
     M :: Matrix
 """
-function make_NN(layers::T, N) where {T}
+function make_NN(layers::T, N; act=Flux.relu) where {T}
     L = length(layers)
     bs = []
     for i in 1:N
         for j in i:N
-            push!(bs, make_NN(layers))
+            push!(bs, make_NN(layers; act=act))
         end
     end
     SymMat(bs)

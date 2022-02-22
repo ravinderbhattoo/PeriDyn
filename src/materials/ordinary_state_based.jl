@@ -38,16 +38,23 @@ end
 
 Calculates force density (actually acceleration) for ordinary state based material type.
 """
-function PeriDyn.force_density_T(y::Array{Float64,2}, mat::OrdinaryStateBasedMaterial)
+function PeriDyn.force_density_T(y::Array{Float64,2}, mat::OrdinaryStateBasedMaterial; particles=nothing)
     force = zeros(size(y))
     types = mat.general.type
     S = mat.general
     m = mat.general.weighted_volume
     intact = S.intact
     family = S.family
+
+    if isnothing(particles) 
+        _N = 1:size(family, 2)
+    else
+        _N = particles
+    end
+
     theta = dilatation(y, S, m)
     N = size(S.x, 2)
-    Threads.@threads for i in 1:N
+    Threads.@threads for i in _N
         for k in 1:size(S.family,1)
             j = S.family[k,i]
             if !S.intact[k,i]
