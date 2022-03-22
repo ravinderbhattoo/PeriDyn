@@ -59,14 +59,14 @@ get_magnitude(a) = @_magnitude(a)
 macro _ij(j, i, x)
     if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
         quote
-            SVector($(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))], 
+            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))], 
                     $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))], 
-                    $(esc(x))[3,$(esc(j))] - $(esc(x))[3,$(esc(i))])
+                    $(esc(x))[3,$(esc(j))] - $(esc(x))[3,$(esc(i))]]
         end
     else
         quote
-            SVector($(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))], 
-                    $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))])
+            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))], 
+                    $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))]]
         end
     end
 end
