@@ -11,6 +11,9 @@ end
 
 
 """
+    save_state!(filename, env)
+
+Save `env::GeneralEnv` to disk.
 """
 function save_state!(filename, env)
     update_acc!(env)
@@ -80,7 +83,7 @@ function update_acc!(env::GeneralEnv)
             m = (env.type .== j)
             t = j - env.material_blocks[i].type.start + 1
             
-            # acceleration = (force density * volume) / density
+            # acceleration = (force_density[force/vol/vol] * volume) / density
             env.f[:, m] ./= env.material_blocks[i].specific.density[t]
             
             # momentum = velocity * volume * density
@@ -183,7 +186,7 @@ end
 SOLVERS[:vv] = velocity_verlet!
 
 
-function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_tol::Float64=1.0e-6, f_tol::Float64=1.0e-6)
+function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_tol::Float64=1.0e-6, f_tol::Float64=1.0e-10)
     for bc in env.boundary_conditions
         apply_bc!(env, bc)
     end
@@ -211,12 +214,12 @@ function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_to
         end
         update_acc!(env)
         
-        if ( (x_tol_ < x_tol) || (f_tol_ < f_tol) )
-            println("Tolerance reached. $x_tol_ <= $x_tol or $f_tol_ <= $f_tol")
+        if (f_tol_ < f_tol) #|| (x_tol_ < x_tol)
+            println("Tolerance reached, iter $i. x_tol $x_tol_ <= $x_tol or f_tol $f_tol_ <= $f_tol")
             break
         end
         if i==max_iter
-            println("Maximum iteration ($max_iter) reached. $x_tol_ !<= $x_tol and $f_tol_ !<= $f_tol")
+            println("Maximum iteration, iter $i ($max_iter) reached. x_tol $x_tol_ !<= $x_tol and f_tol $f_tol_ !<= $f_tol")
         end
     end
     for bc in env.boundary_conditions

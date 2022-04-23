@@ -47,12 +47,6 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial; particles=
     M = size(family, 1)
     ARGS = map((i) -> (i, 1:M), _N)    
     
-    function cal_force_ij(f, Y, inp)
-        M = Y./get_magnitude(Y)
-        t = f(inp)
-        return t.*M    
-    end    
-
     function with_if_cal_force_ij(i, k)
         if intact[k,i]
             j = family[k,i]
@@ -65,7 +59,7 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial; particles=
             type1 = types[i]- mat.type.start + 1
             type2 = types[j] - mat.type.start + 1
             if s < mat.specific.critical_stretch[type1, type2]
-                return cal_force_ij((s) -> mat.specific.bond_stiffness[type1, type2]*s, Y, s)
+                return mat.specific.bond_stiffness[type1, type2]*s*mat.general.volume[j] * (Y/_Y) 
             else
                 intact[k,i] = false
                 return [0.0, 0.0, 0.0]
