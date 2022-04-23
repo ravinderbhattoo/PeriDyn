@@ -229,8 +229,10 @@ function td_norm_fn(y, theta, mat)
             return 0.0
         end
     end
-
-    inner_map(i, inds) = sqrt(mapreduce((j) -> with_if_cal_td_2(i, j), +, inds))
+    
+    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+    
+    # inner_map(i, inds) = mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
     outer_map(ARGS) = map((x) -> inner_map(x[1], x[2]), ARGS)
     return outer_map(ARGS)
 end

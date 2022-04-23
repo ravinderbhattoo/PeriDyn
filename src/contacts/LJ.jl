@@ -58,7 +58,7 @@ function repulsion_force(dr, RepMod::LJRepulsionModel12)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -(RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr/mag_dr
+        return (RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr/mag_dr
     end
 end
 
@@ -73,6 +73,6 @@ function repulsion_force(dr, RepMod::LJRepulsionModel11)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -(RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr
+        return (RepMod.epsilon*del_x^(RepMod.alpha-1)).*dr
     end
 end

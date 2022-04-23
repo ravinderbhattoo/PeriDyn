@@ -128,7 +128,7 @@ end
 
 Fill cells with material points.
 """
-function get_cells(x::Array{Float64,2}, horizon::Number; max_part=200)
+function get_cells(x::Array{Float64,2}, horizon::Number; max_part=100)
     _min = minimum(x, dims = 2)
     _max = maximum(x, dims = 2)
     N = @. Int(max(1, min(max_part, fld((_max - _min), horizon))))

@@ -8,6 +8,7 @@ using Zygote
 using StaticArrays
 using Folds
 using PDMesh
+using ProgressBars
 
 include("./macros.jl") # macros
 
@@ -29,6 +30,6 @@ include("./materials/EPS.jl")
 include("./contacts/contacts.jl")
 
 include("./boundary_conditions.jl") # boundary condition functions
-include("./solvers.jl") # All implemented solvers
+include("./solvers/solvers.jl") # All implemented solvers
 
 end

@@ -1,6 +1,50 @@
 abstract type RepulsionModel11 end
 abstract type RepulsionModel12 end
 
+@def RepulsionModel_gf begin
+    equi_dist::Float64
+    distance::Float64
+    horizons::Tuple
+    hor::Float64
+    neighs::Array{Int64,2}
+    max_neighs::Int64
+end
+
+@def RepulsionModel12_gf begin
+    @RepulsionModel_gf
+    pair::Vector{UnitRange{Int64}}
+end
+
+@def RepulsionModel11_gf begin
+    @RepulsionModel_gf
+    type::UnitRange{Int64}
+    material::GeneralMaterial
+end
+
+function RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
+    equi_dist = (mat1.general.particle_size + mat2.general.particle_size) / 2
+    distance = distanceX * equi_dist
+    horizons = (mat1.general.horizon, mat2.general.horizon) 
+    hor = sum(horizons) / 2
+    neighs = zeros(min(max_neighs,size(mat2.general.x,2)), size(mat1.general.x,2))
+    max_neighs = min(max_neighs,size(mat2.general.x,2))
+    pair = [mat1.type,mat2.type]
+    return (equi_dist, distance, horizons, hor, neighs, max_neighs, pair)
+end
+
+function RepulsionModel11_gcal(mat1, distanceX, max_neighs) 
+    equi_dist = mat1.general.particle_size
+    distance = distanceX * equi_dist
+    horizons = (mat1.general.horizon, )
+    hor = mat1.general.horizon
+    neighs = zeros(max_neighs, size(mat1.general.x,2))
+    max_neighs = min(max_neighs,size(mat1.general.x,2))
+    type = mat1.type
+    material = mat1.general    
+    return (equi_dist, distance, horizons, hor, neighs, max_neighs, type, material)
+end
+
+
 function Base.show(io::IO, i::Union{RepulsionModel11, RepulsionModel12})
     println(io, typeof(i))
     for j in fieldnames(typeof(i))
@@ -19,6 +63,10 @@ export short_range_repulsion!, collision_box, update_repulsive_neighs!
 
 Updates (inplace) the repulsive acceleration of material points.
 
+``α``
+
+**`1-1 repulsion`**
+
 # Input Args:
 - `y :: Positions of material point`
 - `f :: Acceleration of material points`
@@ -30,7 +78,7 @@ Updates (inplace) the repulsive acceleration of material points.
 
 # Examples
 ```jldoctest
-julia> short_range_repulsion!(y, f, type, RepusionModel)
+julia> short_range_repulsion!(y,f,type,RepusionModel)
 ```
 """
 function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
@@ -52,8 +100,9 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
         for k in 1:size(RM.neighs, 1)
             j = RM.neighs[k,i]
             if j>0
-                force = repulsion_force(x1[:, i].-x2[:, j], RM)
-                f1[:,i] .+= -force / vol1[i]
+                force = repulsion_force(x1[:, i] .- x2[:, j], RM)
+                f1[:,i] .+= force * vol2[j]  
+                f2[:,j] .-=  force * vol1[i] 
             end
             if j==0 break end
         end
@@ -81,8 +130,9 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel11)
         for k in 1:size(RM.neighs,1)
             j = RM.neighs[k,i]
             if j>0
-                force = repulsion_force(x1[:,i].-x1[:,j], RM)
-                f1[:,i] .+= -force / vol1[i]
+                force = repulsion_force(x1[:, i] .- x1[:, j], RM)
+                f1[:,i] .+= force / vol1[j]
+                f1[:,j] .-= force / vol1[i]
             end
             if j==0 break end
         end
@@ -223,6 +273,7 @@ end
 
 
 include("./LJ.jl")
+include("./shortrange.jl")
 include("./nonlinear.jl")
 include("./linear.jl")
 

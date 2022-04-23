@@ -59,7 +59,7 @@ function repulsion_force(dr,RepMod::NonLinearRepulsionModel12)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
+        return ( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
     end
 end
 
@@ -76,6 +76,6 @@ function repulsion_force(dr,RepMod::NonLinearRepulsionModel11)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return -( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
+        return ( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
     end
 end

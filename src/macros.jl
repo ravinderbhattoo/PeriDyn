@@ -1,11 +1,26 @@
-export TIMEIT_REF, CHECK_NAN, SPATIAL_DIMENSIONS_REF
+export TIMEIT_REF, CHECK_NAN, SPATIAL_DIMENSIONS_REF, MULTI_THREAD_REF
 export check_nan, timeit
 export _magnitude, _ij
-export refresh
+export refresh, set_multi_threading
+
+macro def(name, definition)
+    return quote
+        macro $(esc(name))()
+            esc($(Expr(:quote, definition)))
+        end
+    end
+end
 
 TIMEIT_REF = Ref(false)
 CHECK_NAN = Ref(true)
+MULTI_THREAD_REF = Ref(true)
 SPATIAL_DIMENSIONS_REF = Ref(3)
+
+function set_multi_threading(x)
+    MULTI_THREAD_REF[] = x
+    refresh()
+    println("Multi threading: ", x)
+end
 
 macro check_nan(var, name)
     if CHECK_NAN[]
@@ -73,10 +88,31 @@ end
 
 get_ij(j, i, a) = @_ij(j, i, a) 
 
+function whatis(a, b, c)
+    println(a)
+    println(b)
+    println(c)
+end
+
+macro map_reduce(f, op, iter)
+    if PeriDyn.MULTI_THREAD_REF[]
+        quote
+            Folds.mapreduce($(esc(f)), $(esc(op)), $(esc(iter)))
+        end
+    else
+        quote
+            mapreduce($(esc(f)), $(esc(op)), $(esc(iter)))
+        end
+    end
+end
+
+map_reduce(f, op, iter) = @map_reduce(f, op, iter)
+
 function refresh()
     @eval(
         begin
             PeriDyn.get_magnitude(a) = PeriDyn.@_magnitude(a)
             PeriDyn.get_ij(j, i, a) = PeriDyn.@_ij(j, i, a)
+            PeriDyn.map_reduce(f, op, iter) = PeriDyn.@map_reduce(f, op, iter)
         end)
 end
