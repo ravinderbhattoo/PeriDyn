@@ -19,10 +19,6 @@ export short_range_repulsion!, collision_box, update_repulsive_neighs!
 
 Updates (inplace) the repulsive acceleration of material points.
 
-``α``
-
-**`1-1 repulsion`**
-
 # Input Args:
 - `y :: Positions of material point`
 - `f :: Acceleration of material points`
@@ -34,7 +30,7 @@ Updates (inplace) the repulsive acceleration of material points.
 
 # Examples
 ```jldoctest
-julia> short_range_repulsion!(y,f,type,RepusionModel)
+julia> short_range_repulsion!(y, f, type, RepusionModel)
 ```
 """
 function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
@@ -58,7 +54,6 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
             if j>0
                 force = repulsion_force(x1[:, i].-x2[:, j], RM)
                 f1[:,i] .+= -force / vol1[i]
-                f2[:,j] .+= force / vol2[j]
             end
             if j==0 break end
         end
@@ -88,7 +83,6 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel11)
             if j>0
                 force = repulsion_force(x1[:,i].-x1[:,j], RM)
                 f1[:,i] .+= -force / vol1[i]
-                f1[:,j] .+= force / vol1[j]
             end
             if j==0 break end
         end

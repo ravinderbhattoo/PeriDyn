@@ -3,3 +3,6 @@
 .fuse*
 docs/build
 output
+notebooks/*.png
+notebooks/*.pfig
+.vscode
