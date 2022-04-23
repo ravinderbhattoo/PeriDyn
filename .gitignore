@@ -1,5 +1,7 @@
 *.data
 *.ipynb_checkpoints
+*.png
+*.pfig
 .fuse*
 docs/build
 output
