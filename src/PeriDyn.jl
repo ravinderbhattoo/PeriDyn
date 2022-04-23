@@ -29,7 +29,7 @@ include("./materials/EPS.jl")
 # contact models
 include("./contacts/contacts.jl")
 
-include("./boundary_conditions.jl") # boundary condition functions
+include("./boundary_conditions/boundary_conditions.jl") # boundary condition functions
 include("./solvers/solvers.jl") # All implemented solvers
 
 end

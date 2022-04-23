@@ -2,7 +2,8 @@ export minimize!, quasi_static!
 
 function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_tol::Float64=1.0e-6, f_tol::Float64=1.0e-6)
     for bc in env.boundary_conditions
-        apply_bc!(env, bc)
+        apply_bc!(env, bc, :position)
+        apply_bc!(env, bc, :velocity)
     end
     update_acc!(env)
     
@@ -35,7 +36,8 @@ function minimize!(env::GeneralEnv, step_size::Float64; max_iter::Int64=50, x_to
         
         for bc in env.boundary_conditions
             if ~(bc.onlyatstart)
-                apply_bc!(env, bc)
+                apply_bc!(env, bc, :position)
+                apply_bc!(env, bc, :velocity)
             end
         end
         update_acc!(env)

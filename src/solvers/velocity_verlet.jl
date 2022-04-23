@@ -9,17 +9,22 @@ function velocity_verlet_step!(env::GeneralEnv)
     c = env.dt/2
     env.v .+= c.*env.f
     env.y .+= env.dt.*env.v
+    
     for bc in env.boundary_conditions
-        apply_bc!(env, bc)
+        apply_bc!(env, bc, :position)
     end
+    
     update_acc!(env)
     env.v .+= c.*env.f
+    
     for bc in env.boundary_conditions
-        apply_bc!(env, bc)
+        apply_bc!(env, bc, :velocity)
     end
+    
     for bc in env.boundary_conditions
         check!(bc, env)
     end
+
     env.time_step += 1
 end
 
