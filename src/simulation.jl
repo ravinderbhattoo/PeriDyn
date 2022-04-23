@@ -1,7 +1,4 @@
-export Env, @env
-
-
-
+export Env, @env, simulate
 
 mutable struct GeneralEnv
     id::Int64
@@ -11,6 +8,9 @@ mutable struct GeneralEnv
     y::Array{Float64,2}
     v::Array{Float64,2}
     f::Array{Float64,2}
+    p::Array{Float64,2}
+    volume::Array{Float64,1}
+    mass::Array{Float64,1}
     time_step::Int64
     dt::Float64
     neighs::Array{Int64,2}
@@ -28,19 +28,34 @@ end
 Create a GeneralEnv for holding parameters for a simulation.
 """
 function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2)
-    type = materials[1].general.type
-    for i in 2:size(materials,1)
-        type = vcat(type, materials[i].general.type)
+    mat = materials[1]
+    type = mat.general.type
+    y = mat.general.y
+    v = mat.general.velocity
+    volume = mat.general.volume
+    mass = 1*volume
+    for j in mat.type
+        mask = (mat.general.type .== j)
+        t = j - mat.type.start + 1
+        mass[mask] .*= mat.specific.density[t]
     end
-    y = materials[1].general.y
+
     for mat in materials[2:end]
+        type = vcat(type, mat.general.type)
         y = hcat(y,mat.general.y)
-    end
-    v = materials[1].general.velocity
-    for mat in materials[2:end]
         v = hcat(v,mat.general.velocity)
+        volume = vcat(volume,mat.general.volume)
+
+        mass_ = 1*mat.general.volume
+        for j in mat.type
+            mask = (mat.general.type .== j)
+            t = j - mat.type.start + 1
+            mass_[mask] .*= mat.specific.density[t]
+        end
+
+        mass = vcat(mass,mass_)
     end
-    return GeneralEnv(id,type,0*type,state,y,v,0v,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials,nothing,nothing,nothing)
+    return GeneralEnv(id,type,0*type,state,y,v,0v,0v,volume,mass,0,dt,zeros(2,2),boundary_conds,short_range_repulsion,materials,nothing,nothing,nothing)
 end
 
 """
@@ -79,5 +94,18 @@ Set environment state inactive.
 function set_env_inactive!(env)
     env.state = 0
 end
+
+
+"""
+"""
+function simulate(args...; solver=:vv, out_dir="datafile", append_date=true, kwargs...)
+    sim = SOLVERS[solver]
+    println("Using solver: $(sim)")
+    foldername = filepath_(out_dir; append_date=append_date)
+    println("Output folder: $foldername")
+    return sim(args...; kwargs..., out_dir=foldername)
+end
+
+
 
 #

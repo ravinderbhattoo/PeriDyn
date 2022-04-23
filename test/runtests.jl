@@ -1,9 +1,9 @@
 using Test, SafeTestsets
-using PeriDyn
+using PeriDyn, PDMesh
 PD = PeriDyn
 
 
 include("./util_test.jl")
-include("./contacts_test.jl")
-include("./bond_based_test.jl")
-include("./ordinary_state_based_tests.jl")
+# include("./contacts_test.jl")
+# include("./bond_based_test.jl")
+# include("./ordinary_state_based_tests.jl")
