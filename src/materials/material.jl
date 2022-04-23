@@ -20,7 +20,7 @@ end
 
 
 """
-    PeridynamicsMaterial(gen, spc::OrdinaryStateBasedSpecific; name="PM")
+    PeridynamicsMaterial(gen, spc::PeridynamicsMaterial; name="PM")
 """
 function PeridynamicsMaterial(gen, spc; name="PM")
     type = minimum(gen.type):maximum(gen.type)
