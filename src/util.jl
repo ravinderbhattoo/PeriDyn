@@ -67,8 +67,8 @@ function dilatation_theta(y::Array{Float64,2}, S::GeneralMaterial)
         return influence_function(X) * _X * extention * S.volume[j] * horizon_correction(X, S.particle_size, S.horizon)
     end
     
-    inner_map(i, js) = mapreduce((j) -> with_if_cal_theta_ij(i, j), +, js, init = 0.0)
-    return Folds.map((i) -> inner_map(i, family[intact[:, i], i]), 1:N)
+    inner_map(i, js) = map_reduce((j) -> with_if_cal_theta_ij(i, j), +, js)
+    return map((i) -> inner_map(i, family[intact[:, i], i]), 1:N)
 
 end
 
