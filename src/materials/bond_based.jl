@@ -69,9 +69,10 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial; particles=
         end
     end
     
-    # inner_map(i, inds) = Folds.mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds)
     
-    inner_map(i, inds) = sum(map((j)-> with_if_cal_force_ij(i,j), inds))
+    # inner_map(i, inds) = mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+        
     outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)
     
     return hcat(outer_map(ARGS)...)

@@ -27,8 +27,9 @@ Peridynamics implementation in Julia.
 
 ### Installation
 ```
-using Pkg
-Pkg.add(PeriDyn)
+import Pkg
+Pkg.add(url="https://github.com/ravinderbhattoo/PDMesh.git")
+Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
 ```
 
 ### Documentation

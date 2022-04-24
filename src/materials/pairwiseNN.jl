@@ -60,22 +60,24 @@ function force_density_T(y::Array{Float64,2}, mat::PairwiseNNMaterial; particles
             _X = get_magnitude(X)
             _Y = get_magnitude(Y)
             ext = _Y - _X
-            s = ext/_X
+            # s = ext/_X
             type1 = types[i]- mat.type.start + 1
             type2 = types[j] - mat.type.start + 1
-            if s < mat.specific.critical_stretch[type1, type2]
-                return cal_force_ij((x) -> first(mat.specific.NNs[type1, type2](x)), Y, [ext, _X])
-            else
-                return [0.0, 0.0, 0.0]
-            end            
+            # if s < mat.specific.critical_stretch[type1, type2]
+                # return cal_force_ij((x) -> first(mat.specific.NNs[type1, type2](x)), Y, [ext, _X])
+                return first(mat.specific.NNs[type1, type2]([ext])) * Y / _Y
+            # else
+            #     return [0.0, 0.0, 0.0]
+            # end            
         else
             return [0.0, 0.0, 0.0]
         end
     end
+    
+    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+    
+    # inner_map(i, inds) = mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
 
-    # inner_map(i, inds) = Folds.mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
-
-    inner_map(i, inds) = sum(map((j)-> with_if_cal_force_ij(i,j), inds))
     outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)
 
     return hcat(outer_map(ARGS)...)

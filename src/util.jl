@@ -67,8 +67,8 @@ function dilatation_theta(y::Array{Float64,2}, S::GeneralMaterial)
         return influence_function(X) * _X * extention * S.volume[j] * horizon_correction(X, S.particle_size, S.horizon)
     end
     
-    inner_map(i, js) = mapreduce((j) -> with_if_cal_theta_ij(i, j), +, js, init = 0.0)
-    return Folds.map((i) -> inner_map(i, family[intact[:, i], i]), 1:N)
+    inner_map(i, js) = map_reduce((j) -> with_if_cal_theta_ij(i, j), +, js)
+    return map((i) -> inner_map(i, family[intact[:, i], i]), 1:N)
 
 end
 
@@ -128,7 +128,7 @@ end
 
 Fill cells with material points.
 """
-function get_cells(x::Array{Float64,2}, horizon::Number; max_part=200)
+function get_cells(x::Array{Float64,2}, horizon::Number; max_part=100)
     _min = minimum(x, dims = 2)
     _max = maximum(x, dims = 2)
     N = @. Int(max(1, min(max_part, fld((_max - _min), horizon))))
