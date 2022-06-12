@@ -2,7 +2,7 @@ export save_state!, update_acc!, update_neighs!
 
 function filepath_(file_prefix; append_date=false)
     if append_date
-        dtime = replace(string(ceil(Dates.now(), Dates.Second(1))), ":"=>"-")
+        dtime=replace(string(ceil(Dates.now(), Dates.Second(1))), ":"=>"-")
         return mkpath("./output/"*file_prefix*"_"*dtime)*"/"
     else
         return mkpath("./output/"*file_prefix)*"/"
@@ -17,7 +17,7 @@ Save `env::GeneralEnv` to disk.
 """
 function save_state!(filename, env)
     update_acc!(env)
-    write_data(filename, 1:length(env.type), env.type, env.y, env.v, env.f, env.mass, env.volume)
+    write_data(filename; id=1:length(env.type), type=env.type, position=env.y, velocity=env.v, acceleration=env.f, mass=env.mass, volume=env.volume)
 end
 
 function apply_bc_at0(env, start_at)
@@ -115,11 +115,11 @@ end
 
 Writes data file to disk.
 """
-function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64)
+function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64; ext::Symbol=:jld)
     println("\nWritting data file................................$i\n")
     for id in 1:size(envs,1)
         env = envs[id]
-        filename = string(file_prefix,"/env_",env.id,"_step_",i,".data")
+        filename = string(file_prefix,"/env_",env.id,"_step_",i,".$(String(ext))")
         save_state!(filename, env)
     end
     println("Done")
