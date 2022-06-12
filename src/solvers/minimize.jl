@@ -63,12 +63,14 @@ end
 
 Implements quasi static simulation using minimize for each step.
 """
-function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, filewrite_freq::Int64=10, neigh_update_freq::Int64=1, out_dir::String="datafile",start_at::Int64=0,write_from::Int=0)
+function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=100, filewrite_freq::Int64=10, neigh_update_freq::Int64=1, out_dir::String="datafile",start_at::Int64=0,write_from::Int=0, ext::Symbol=:jld)
     mkpath(out_dir)
-    print_data_file!(envs, out_dir, 0)
+    _print_data_file!(step) = print_data_file!(envs, out_dir, step; ext=ext)
+
+    _print_data_file!(0)
     update_neighs!(envs)
     
-    print_data_file!(envs, out_dir, 0+write_from)
+    _print_data_file!(0+write_from)
  
     
     for id in 1:size(envs,1)
@@ -88,7 +90,7 @@ function quasi_static!(envs::Any,N::Int64,step_size::Float64; max_iter::Int64=10
             end
         end
         if i%filewrite_freq==0.0 || (i==1 && write_from==0)
-            print_data_file!(envs, out_dir, i+write_from)
+            _print_data_file!(i+write_from)
         end
         
         if i%neigh_update_freq==0.0
