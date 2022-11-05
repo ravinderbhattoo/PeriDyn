@@ -34,8 +34,9 @@ velocity_verlet!(envs::Any,N::Int64;filewrite_freq=10,neigh_update_freq=50,file_
 
 Velocity verlet :).
 """
-function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_freq=10,neigh_update_freq=50, out_dir="datafile",start_at::Int64=0,write_from::Int=0)
-mkpath(out_dir)
+function velocity_verlet!(envs::Any, N::Int64; filewrite_freq=10,average_prop_freq=10,neigh_update_freq=50, out_dir="datafile",start_at::Int64=0,write_from::Int=0, ext::Symbol=:jld)
+    mkpath(out_dir)
+    _print_data_file!(step) = print_data_file!(envs, out_dir, step; ext=ext)
 
     # Updating neighbors for contact
     println("\nUpdating neighbors for collision..................")
@@ -51,7 +52,7 @@ mkpath(out_dir)
     N = N + start_at
 
     # save initial state
-    print_data_file!(envs, out_dir, 0+write_from)
+    _print_data_file!(0+write_from)
 
 
     # apply boundary conditions at t = t0
@@ -85,7 +86,7 @@ mkpath(out_dir)
         
         # write file to disk
         if i%filewrite_freq==0.0 || i==1
-            print_data_file!(envs, out_dir, i+write_from)
+            _print_data_file!(i+write_from)
         end
         
         # update neighbors

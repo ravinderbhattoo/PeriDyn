@@ -9,6 +9,7 @@ using StaticArrays
 using Folds
 using PDMesh
 using ProgressBars
+using JLD
 
 include("./macros.jl") # macros
 
@@ -31,5 +32,6 @@ include("./contacts/contacts.jl")
 
 include("./boundary_conditions/boundary_conditions.jl") # boundary condition functions
 include("./solvers/solvers.jl") # All implemented solvers
+include("./io/io.jl") 
 
 end
