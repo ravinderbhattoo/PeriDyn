@@ -14,7 +14,7 @@ makedocs(sitename="PeriDyn",
         # format = Documenter.LaTeX(),
         modules=[PeriDyn, PDMesh],
         pages = [
-            "Home" => "peridyn.md",
+            "Home" => "index.md",
             "Table of contents" => "toc.md",
             "Material models" => "mmodels.md",
             "Contact models" => "cmodels.md",
@@ -22,7 +22,7 @@ makedocs(sitename="PeriDyn",
             "Boundary Conditions" => "bc.md",
             "Operator and Utility" => "operatorandutil.md",
             "Examples" => "examples.md",
-            "Index" => "index.md",
+            "Index" => "list.md",
             "Autodocs" => "autodocs.md"
         ]
         )

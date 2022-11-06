@@ -1,6 +1,3 @@
-# Index
+# PeriDyn.jl
 
-```@index
-```
-
-
+Documentation is incomplete. It will be populated soon.

@@ -1,1 +1,0 @@
-# PeriDyn.jl
