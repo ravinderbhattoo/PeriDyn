@@ -39,5 +39,5 @@ Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
 
 |  Description | Video  |
 |---|---|
-|Disk Impact|<iframe width="500" height="400" src="https://www.youtube.com/embed/RUdVr0Yh1jc" title="Peridynamics: Disk Impact (bottom)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>|
-|Wave propagation|<iframe width="500" height="400" src="https://www.youtube.com/embed/q1N0aAdFYEs" title="Peridynamics: Stress Wave Propagation due to Impact Loading" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>|
+|Disk Impact|<a href="http://www.youtube.com/watch?feature=player_embedded&v=RUdVr0Yh1jc " target="_blank"><img src="http://img.youtube.com/vi/RUdVr0Yh1jc/0.jpg" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" /></a>|
+|Wave propagation|<a href="http://www.youtube.com/watch?feature=player_embedded&v=q1N0aAdFYEs " target="_blank"><img src="http://img.youtube.com/vi/q1N0aAdFYEs/0.jpg" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" /></a>|
