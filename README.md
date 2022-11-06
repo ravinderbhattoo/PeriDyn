@@ -27,13 +27,13 @@ Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
 # Examples
 
 ## Block Plate Collision
-![plate_block](/resources/plate_block.gif)
+<img src="/resources/plate_block.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
 
 ## Fracture
-![fracture](/resources/notch.gif)
+<img src="/resources/notch.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
 
 ## Collision
-![collision](/resources/2blocks.gif)
+<img src="/resources/2blocks.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
 
 # Videos
 
