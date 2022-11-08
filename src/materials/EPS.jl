@@ -63,16 +63,14 @@ end
     ElastoPlasticSolidMaterial(type::UnitRange{Int64}, general::GeneralMaterial, specific::ElastoPlasticSolidSpecific)
 """
 struct ElastoPlasticSolidMaterial <: PeridynamicsMaterial
-    name::String
-    type::UnitRange{Int64}
-    general::GeneralMaterial
+    @PeridynamicsMaterial_gf 
     specific::ElastoPlasticSolidSpecificFull
 end
 
 """
     PeridynamicsMaterial(gen, spc::ElastoPlasticSolidSpecific)
 """
-function PeridynamicsMaterial(name, type, gen, spc::ElastoPlasticSolidSpecific)
+function PeridynamicsMaterial(name, type, bid, gen, spc::ElastoPlasticSolidSpecific)
     edp = 0 * gen.family
     _spc = ElastoPlasticSolidSpecificFull(
         spc.bulk_modulus,
@@ -83,7 +81,7 @@ function PeridynamicsMaterial(name, type, gen, spc::ElastoPlasticSolidSpecific)
         edp,
         spc.criteria,
     )
-    ElastoPlasticSolidMaterial(name, type, gen, _spc)
+    ElastoPlasticSolidMaterial(name, type, bid, gen, _spc)
 end
 
 

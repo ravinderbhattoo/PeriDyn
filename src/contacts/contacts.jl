@@ -24,7 +24,7 @@ end
 function RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
     equi_dist = (mat1.general.particle_size + mat2.general.particle_size) / 2
     distance = distanceX * equi_dist
-    horizons = (mat1.general.horizon, mat2.general.horizon) 
+    horizons = (mat1.general.horizon, mat2.general.horizon)
     hor = sum(horizons) / 2
     neighs = zeros(min(max_neighs,size(mat2.general.x,2)), size(mat1.general.x,2))
     max_neighs = min(max_neighs,size(mat2.general.x,2))
@@ -32,7 +32,7 @@ function RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
     return (equi_dist, distance, horizons, hor, neighs, max_neighs, pair)
 end
 
-function RepulsionModel11_gcal(mat1, distanceX, max_neighs) 
+function RepulsionModel11_gcal(mat1, distanceX, max_neighs)
     equi_dist = mat1.general.particle_size
     distance = distanceX * equi_dist
     horizons = (mat1.general.horizon, )
@@ -40,7 +40,7 @@ function RepulsionModel11_gcal(mat1, distanceX, max_neighs)
     neighs = zeros(max_neighs, size(mat1.general.x,2))
     max_neighs = min(max_neighs,size(mat1.general.x,2))
     type = mat1.type
-    material = mat1.general    
+    material = mat1.general
     return (equi_dist, distance, horizons, hor, neighs, max_neighs, type, material)
 end
 
@@ -81,7 +81,7 @@ Updates (inplace) the repulsive acceleration of material points.
 julia> short_range_repulsion!(y,f,type,RepusionModel)
 ```
 """
-function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
+function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel12)
     mask1 = false
     for i in RM.pair[1]
         mask1 = mask1 .| (type .== i)
@@ -101,14 +101,14 @@ function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel12)
             j = RM.neighs[k,i]
             if j>0
                 force = repulsion_force(x1[:, i] .- x2[:, j], RM)
-                f1[:,i] .+= force * vol2[j]  
-                f2[:,j] .-=  force * vol1[i] 
+                f1[:,i] .+= force * vol2[j]
+                f2[:,j] .-=  force * vol1[i]
             end
             if j==0 break end
         end
     end
-    f[:, mask1] .= f1 
-    f[:, mask2] .= f2 
+    f[:, mask1] .= f1
+    f[:, mask2] .= f2
     return nothing
 end
 
@@ -118,26 +118,51 @@ end
 
 Updates (inplace) the repulsive acceleration of material points.
 """
-function short_range_repulsion!(y, f, type, vol, RM::RepulsionModel11)
-    mask1 = false
-    for j in RM.type
-        mask1 = mask1 .| (type .== j)
-    end
-    f1 = f[:,mask1]
-    x1 = y[:,mask1]
-    vol1 = vol[mask1]
-    for i in 1:size(RM.neighs,2)
-        for k in 1:size(RM.neighs,1)
-            j = RM.neighs[k,i]
-            if j>0
-                force = repulsion_force(x1[:, i] .- x1[:, j], RM)
-                f1[:,i] .+= force / vol1[j]
-                f1[:,j] .-= force / vol1[i]
+function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11)
+    force_fn = get_repulsion_force_fn(RM)
+    mask1 = bid .== RM.bid
+
+    type = CuArray(type[mask1])
+    f1 = CuArray(f[:,mask1])
+    x1 = CuArray(y[:,mask1])
+    vol1 = CuArray(vol[mask1])
+    neighs = CuArray(RM.neighs)
+
+    function cal_force(x1, vol1, neighs, type, f1)
+        index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+        stride = blockDim().x * gridDim().x
+
+        for i in index:stride:size(neighs, 2)
+            for k in 1:size(neighs, 1)
+                j = neighs[k,i]
+                if (j>0) && (type[i]!=-1) && (type[j]!=-1)
+                    force = force_fn((
+                        x1[1, i]-x1[1, j],
+                        x1[2, i]-x1[2, j],
+                        x1[3, i]-x1[3, j]
+                    ))
+
+                    f1[1,i] += force[1] / vol1[j]
+                    f1[2,i] += force[2] / vol1[j]
+                    f1[3,i] += force[3] / vol1[j]
+
+                    f1[1,j] -= force[1] / vol1[i]
+                    f1[2,j] -= force[2] / vol1[i]
+                    f1[3,j] -= force[3] / vol1[i]
+                end
             end
-            if j==0 break end
         end
+        return nothing
     end
-    f[:,mask1] .= f1 
+
+    kernel = CUDA.@cuda launch=false cal_force(x1, vol1, neighs, type, f1)
+    config = launch_configuration(kernel.fun)
+    nthreads = Base.min(length(vol1), config.threads)
+    nblocks =  cld(length(vol1), nthreads)
+
+    CUDA.@sync kernel(x1, vol1, neighs, type, f1; threads=nthreads, blocks=nblocks)
+    # f1 = apply_kernel(cal_force, x1, vol1, neighs, type, f1)[end]
+    f[:, mask1] .= CUDA.Array(f1)
     return nothing
 end
 
@@ -184,17 +209,30 @@ end
 Update neighbour list for repulsive force calculation (1-2 interaction).
 
 """
-function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
+function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothing)
+    println("Updating repulsive neighs...")
     _mask1 = false
     for i in RM.pair[1]
         _mask1 = _mask1 .| (type .== i)
     end
+
     _mask2 = false
     for i in RM.pair[2]
         _mask2 = _mask2 .| (type .== i)
     end
+
+
     x11 = y[:, _mask1]
     x22 = y[:, _mask2]
+
+    # println(length(_mask1)," ", sum(_mask1))
+    # println(length(_mask2)," ",sum(_mask2))
+    # println(size(RM.neighs))
+
+    # println(size(x11))
+    # println(size(x22))
+
+
     box_min, box_max, ifcheck = collision_box(x11, x22, RM.distance)
     if ifcheck
         mask1 = reshape(prod(x11.>box_min,dims=1) .* prod(x11.<box_max,dims=1),:)
@@ -219,6 +257,7 @@ function update_repulsive_neighs!(y,type,RM::RepulsionModel12)
         RM.neighs[1:end, 1:end] .= 0
         println("No repulsive neighs.")
     end
+    println("Done")
 end
 
 
@@ -228,14 +267,15 @@ end
 Update neighbour list for repulsive force calculation (1-1 interaction).
 
 """
-function update_repulsive_neighs!(y, type, RM::RepulsionModel11)
+function update_repulsive_neighs!(y, type, RM::RepulsionModel11; max_part=30)
     mask = false
     for j in RM.type
         mask = mask .| (type .== j)
     end
     x = y[:, mask]
     fill!(RM.neighs,0)
-    cells, cell_neighs = get_cells(x, RM.distance)
+    cutoff = RM.distance
+    cells, cell_neighs = get_cells(x, cutoff; max_part=max_part)
     Threads.@threads for cell_i in 1:length(cells)
         for ca_id in 1:length(cells[cell_i])
             ind = 1
@@ -246,17 +286,17 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel11)
                 for fa_id in 1:length(cells[neighs])
                     fa = cells[neighs][fa_id]
                     noskip = true
+
+                    # Check if family
                     for k in 1:size(RM.material.family,1)
-                        if fa < RM.material.family[k,ca]
-                            break
-                        end
                         if fa==RM.material.family[k,ca]
-                            if RM.material.intact[k,ca]
-                                noskip = false
-                            end
+                            # if RM.material.intact[k,ca]
+                            #     noskip = false
+                            # end
                             break
                         end
                     end
+
                     if noskip
                         a2,b2,c2 = x[1,fa], x[2,fa], x[3,fa]
                         if 1e-4<((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))<RM.distance^2

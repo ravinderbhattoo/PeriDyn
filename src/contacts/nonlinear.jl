@@ -17,6 +17,7 @@ end
 
 struct NonLinearRepulsionModel11<:RepulsionModel11
     type::UnitRange{Int64}
+    bid::Int64
     material::GeneralMaterial
     exponent::Float64
     stifness::Float64
@@ -44,7 +45,7 @@ NonLinear repulsive model for 1-1 material blocks.
 function NonLinearRepulsionModel(exponent,stifness, mat1::PeridynamicsMaterial; distanceX=5, max_neighs=50)
     max_neighs = min(max_neighs,size(mat1.general.x,2))
     neighs = zeros(max_neighs, size(mat1.general.x,2))
-    NonLinearRepulsionModel11(mat1.type,mat1.general,exponent,stifness,neighs, mat1.general.particle_size*distanceX,max_neighs)
+    NonLinearRepulsionModel11(mat1.type,mat1.blockid,mat1.general,exponent,stifness,neighs, mat1.general.particle_size*distanceX,max_neighs)
 end
 
 """
@@ -69,7 +70,7 @@ end
 
 Calculates repulsive acceleration for 1-1 materials block interaction.
 """
-function repulsion_force(dr,RepMod::NonLinearRepulsionModel11)
+function repulsion_force(dr, RepMod::NonLinearRepulsionModel11)
     mag_dr = get_magnitude(dr) + 1.0e-10
     del_x = RepMod.material.particle_size - mag_dr
     strain = del_x / RepMod.material.particle_size
@@ -78,4 +79,24 @@ function repulsion_force(dr,RepMod::NonLinearRepulsionModel11)
     else
         return ( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
     end
+end
+
+
+function get_repulsion_force_fn(RepMod::NonLinearRepulsionModel11)
+    equi_size = RepMod.material.particle_size
+    expo = RepMod.exponent
+    K = RepMod.stifness
+
+    function fn(dr)
+        mag_dr = get_magnitude(dr) + 1.0e-10
+        del_x = equi_size - mag_dr
+        strain = del_x / equi_size
+        if del_x < 0
+            return (0.0, 0.0, 0.0)
+        else
+            s = ( K * strain^expo )  / mag_dr 
+            return (s*dr[1], s*dr[2], s*dr[3])
+        end
+    end
+    return fn
 end

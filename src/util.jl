@@ -1,5 +1,7 @@
+
 export horizon_correction, dilatation, dilatation_theta, influence_function, weighted_volume, cal_family!
 export _O, _I, _unit
+
 
 @inline function _O(x::AbstractArray)
     return 0 * x
@@ -40,36 +42,58 @@ function influence_function(dr)
 end
 
 """
-    dilatation(y::Array{Float64,2},S::GeneralMaterial,m::Array{Float64,1})
+    dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cpu}})
 
 It gives dilatation as given ordinary state material model.
 """
-function dilatation(y::Array{Float64,2}, S::GeneralMaterial, m::Array{Float64,1})
-    return 3 * dilatation_theta(y, S) ./ m
-end
-
-"""
-    dilatation_theta(y::Array{Float64,2},S::GeneralMaterial)
-
-It gives dilatation as given ordinary state material model.
-"""
-function dilatation_theta(y::Array{Float64,2}, S::GeneralMaterial)
-    intact = S.intact
-    family = S.family
+function dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cpu}})
     N = size(family, 2)
-
     function with_if_cal_theta_ij(i, j)
-        X = get_ij(j, i, S.x)
+        X = get_ij(j, i, x)
         Y = get_ij(j, i, y)
         _X = get_magnitude(X)
         _Y = get_magnitude(Y)
         extention = _Y - _X
-        return influence_function(X) * _X * extention * S.volume[j] * horizon_correction(X, S.particle_size, S.horizon)
+        return influence_function(X) * _X * extention * volume[j] * horizon_correction(X, particle_size, horizon)
     end
-    
-    inner_map(i, js) = map_reduce((j) -> with_if_cal_theta_ij(i, j), +, js)
-    return map((i) -> inner_map(i, family[intact[:, i], i]), 1:N)
 
+    inner_map(i, js) = map_reduce((j) -> with_if_cal_theta_ij(i, j), +, js)
+    return map((i) -> 3/m[i]*inner_map(i, family[intact[:, i], i]), 1:N)
+
+end
+
+
+"""
+    dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cuda}})
+
+It gives dilatation as given ordinary state material model.
+"""
+function dilatation!(theta, y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cuda}})
+    function cal_theta(theta, y, x, intact, family, volume, m)
+        index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+        stride = blockDim().x * gridDim().x
+        for i in index:stride:length(volume)
+            for k in 1:size(family, 1)
+                if intact[k,i]
+                    j = family[k,i]
+                    _X = sqrt((x[1,j]-x[1,i])^2 + (x[2,j]-x[2,i])^2 + (x[3,j]-x[3,i])^2)
+                    _Y = sqrt((y[1,j]-y[1,i])^2 + (y[2,j]-y[2,i])^2 + (y[3,j]-y[3,i])^2)
+                    extention = _Y - _X
+                    # s += influence_function(X) * _X * extention * volume[j] * horizon_correction(X, particle_size, horizon)
+                    theta[i] += 1/_X * _X * extention * volume[j] #* horizon_correction(X, particle_size, horizon)
+                end
+            end
+            theta[i] *= 3/m[i]
+        end
+        return nothing
+    end
+
+    kernel = CUDA.@cuda launch=false cal_theta(theta, y, x, intact, family, volume, m)
+    config = launch_configuration(kernel.fun)
+    nthreads = Base.min(length(volume), config.threads)
+    nblocks =  cld(length(volume), nthreads)
+
+    CUDA.@sync kernel(theta, y, x, intact, family, volume, m; threads=nthreads, blocks=nblocks)
 end
 
 
@@ -128,9 +152,14 @@ end
 
 Fill cells with material points.
 """
-function get_cells(x::Array{Float64,2}, horizon::Number; max_part=100)
+function get_cells(x::Array{Float64,2}, horizon::Number; max_part=30)
     _min = minimum(x, dims = 2)
     _max = maximum(x, dims = 2)
+
+    # vol = prod(_max .- _min)
+    # nN = size(x, 2)
+    # density = nN / vol
+
     N = @. Int(max(1, min(max_part, fld((_max - _min), horizon))))
     cells = [Vector{Int}() for i in 1:prod(N)]
     cell_neighs = Vector{Vector{Int}}(undef, prod(N))
@@ -198,7 +227,7 @@ end
 """
     make_matrix(S::Array{T,1})
 
-Create an symmetrical NxN matrix from a vector of length N(N+1)/2.    
+Create an symmetrical NxN matrix from a vector of length N(N+1)/2.
 
 ================
 ## Returns
@@ -223,7 +252,7 @@ end
 """
     make_matrix(S::Array{T,1})
 
-Create an symmetrical NxN matrix from a vector of length N(N+1)/2.    
+Create an symmetrical NxN matrix from a vector of length N(N+1)/2.
 
 ================
 ## Returns
@@ -244,7 +273,7 @@ end
 """
     make_NN(layers::Tuple{T}, N) where T
 
-Create an symmetrical NxN matrix from a vector of length N(N+1)/2.    
+Create an symmetrical NxN matrix from a vector of length N(N+1)/2.
 
 ================
 ## Returns
@@ -269,6 +298,15 @@ end
 function SymMat(x)
     L = length(x)
     SymMat(x, Int((-1 + sqrt(1 + 4 * 2 * L)) / 2))
+end
+
+function Base.setindex!(m::PeriDyn.SymMat, a, i::Int64, j::Int64)
+    @assert((i <= m.N) & (j <= m.N))
+    if j > i
+        i, j = j, i
+    end
+    ind = Int(i * (i - 1) / 2 + j)
+    m.v[ind] = a
 end
 
 function Base.getindex(m::SymMat, i::Int)
@@ -330,7 +368,7 @@ end
 #     v1 = cutout.v1
 #     v2 = cutout.v2
 #     o = cutout.origin
-#     n = ((v1[2]*v2[3] - v1[3]*v2[2]), - (v1[1]*v2[3] - v1[3]*v2[1]), (v1[1]*v2[2] - v1[2]*v2[1])) 
+#     n = ((v1[2]*v2[3] - v1[3]*v2[2]), - (v1[1]*v2[3] - v1[3]*v2[1]), (v1[1]*v2[2] - v1[2]*v2[1]))
 #     d = - (n[1]*o[1] + n[2]*o[2] + n[3]*o[3])
 #     l_, m_, n_ = x1 - x0
 
@@ -341,3 +379,7 @@ end
 #     k1 = (p[1] - o[1] - k2*v2[1]) / v1[1]
 #     false
 # end
+
+
+perturb(x::AbstractArray; e=1.0e-6) = e*randn(size(x)...) .+ x
+perturb(i::Int64, j::Int64; e=1.0e-6) = e*randn(i, j)
