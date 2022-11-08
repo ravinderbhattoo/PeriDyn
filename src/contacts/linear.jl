@@ -23,5 +23,5 @@ Linear repulsive model for 1-1 material blocks.
 function LinearRepulsionModel(stifness, mat1::PeridynamicsMaterial; distanceX=5, max_neighs=50)
     max_neighs = min(max_neighs,size(mat1.general.x,2))
     neighs = zeros(max_neighs, size(mat1.general.x,2))
-    NonLinearRepulsionModel11(mat1.type,mat1.general,1,stifness,neighs, mat1.general.particle_size*distanceX,max_neighs)
+    NonLinearRepulsionModel11(mat1.type,mat1.blockid,mat1.general,1,stifness,neighs, mat1.general.particle_size*distanceX,max_neighs)
 end

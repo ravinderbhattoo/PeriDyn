@@ -1,19 +1,50 @@
 module PeriDyn
 
+using CUDA
 using Base: Bool
-using LinearAlgebra
-using Dates
-using Flux
-using Zygote
-using StaticArrays
 using Folds
-using PDMesh
+using LinearAlgebra
+
+using Dates
+using StaticArrays
 using ProgressBars
 using JLD
+using Flux
+using Zygote
+using PDMesh
+
+using Optim
+
+# using Flux
+# using Zygote
+
+const PDBlockID = Ref{Int64}(1)
+SOLVERS =  Dict()
+const DEVICE = Ref{Symbol}(:cpu)
+
+function set_cuda(x)
+    function fn(device)
+        DEVICE[] = device
+        println("PeriDyn: DEVICE set to $(DEVICE[])")
+    end
+    if x
+        if CUDA.functional()
+            fn(:cuda)
+            PDMesh.set_cuda(x)
+        else
+            println("PeriDyn: CUDA is not available.")
+        end
+    else
+        fn(:cpu)
+    end
+end
+
+function reset_cuda()
+    set_cuda(CUDA.functional())
+end
+
 
 include("./macros.jl") # macros
-
-SOLVERS =  Dict()
 include("./simulation.jl") # define simulation environment
 
 #material models
@@ -32,6 +63,7 @@ include("./contacts/contacts.jl")
 
 include("./boundary_conditions/boundary_conditions.jl") # boundary condition functions
 include("./solvers/solvers.jl") # All implemented solvers
-include("./io/io.jl") 
+include("./io/io.jl")
+include("./cuda.jl")
 
 end

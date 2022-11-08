@@ -26,14 +26,8 @@ Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
 
 # Examples
 
-## Block Plate Collision
-<img src="/resources/plate_block.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
-
-## Fracture
-<img src="/resources/notch.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
-
-## Collision
-<img src="/resources/2blocks.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
+## Bar tensile simulation
+- [bb_and_osb.jl](https://github.com/ravinderbhattoo/PeriDyn/blob/master/examples/tensile/bb_and_osb.jl)
 
 # Videos
 

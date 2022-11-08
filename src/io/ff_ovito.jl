@@ -1,36 +1,73 @@
-export write_ovito, write_ovito_cell_ids
+export write_ovito, write_ovito_cell_ids, jld2ovito
 
 """
-    write_ovito(filename::String, args...)
+    jld2ovito(file, N; step=100)
 
 It writes the data file.
 """
-function write_ovito(filename::String)
-    inp = Dict()
-    out = Dict(load(filename))
-    for item in out
-        merge!(inp, Dict(Symbol(item[1]) => item[2]))
-    end    
-    write_data(filename*".data"; inp...)
+function jld2ovito(file, N; start=0, step=100)
+    for i in start:step:N
+        x = replace(file, "*"=>"$i")
+        println(x)
+        out = jldread(x)
+        write_ovito(x*".data"; out...)
+    end
 end
 
 """
-    write_ovito(filename::String, args...)
+    jld2array(file, N; step=100)
+
+It loads the data file.
+"""
+function jld2array(file, N; start=0, step=100)
+    out = []
+    for i in start:step:N
+        x = replace(file, "*"=>"$i")
+        println(x)
+        push!(out, jldread(x))
+    end
+    return out
+end
+
+
+"""
+    jldread(filename::String, args...)
+
+It reads the jld data file.
+"""
+function jldread(filename::String)
+    inp = Dict()
+    out = load(filename)
+    for pair in out
+        key, value = pair
+        merge!(inp, Dict(Symbol(key) => value))
+    end
+    return inp
+end
+
+"""
+    write_ovito(filename::String; kwargs...)
 
 It writes the data file.
 """
-function write_ovito(filename::String, args...; col_names=nothing)
+function write_ovito(filename::String; kwargs...)
+    dict = Dict(kwargs)
+    col_names = sort(collect(keys(dict)))
+    args = (dict[k] for k in col_names)
+    item = kwargs[col_names[1]]
+
+    if length(size(item)) > 1
+        N = size(item, 2)
+    else
+        N = length(item)
+    end
+
     if ~isa(col_names, Nothing)
         comment="# " *mapfoldl(String, (a, b)->"$a | $b", col_names)
     else
         comment=""
     end
     file = open(filename, "w+")
-    if length(size(args[1])) == 1
-        N = length(args[1])
-    else
-        N = size(args[1], 2)
-    end
     function getitems(i, arg)
         if length(size(arg)) == 1
             return arg[i]

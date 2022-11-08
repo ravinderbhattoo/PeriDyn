@@ -11,12 +11,14 @@ abstract type BoundaryCondition end
 abstract type BoundaryConditionat0 end
 
 
-function Base.show(io::IO, i::BoundaryCondition)  
+function Base.show(io::IO, i::BoundaryCondition)
     println(io, typeof(i))
     for j in fieldnames(typeof(i))
-        if j in [:bool, :start]
+        item = getproperty(i, j)
+        if isa(item, AbstractArray)
+            println(io, j, ": $(typeof(item)) $(size(item))")
         else
-        println(io, j, ": ", getproperty(i, j))
+            println(io, j, ": ", item)
         end
     end
 end

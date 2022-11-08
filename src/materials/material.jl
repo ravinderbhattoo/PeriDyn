@@ -2,19 +2,27 @@
 This module contain definition of Peridynamics material type.
 """
 
-export GeneralMaterial
+export GeneralMaterial, force_density
+
 
 """
 Abstract PeridynamicsMaterial type.
 """
 abstract type PeridynamicsMaterial end
 
+@def PeridynamicsMaterial_gf begin
+    name::String
+    type::UnitRange{Int64}
+    blockid::Int64
+    general::GeneralMaterial
+end
+
 """
     PeridynamicsMaterial(gen, spc)
 
 Create peridynamics material.
 """
-function PeridynamicsMaterial(name, type, gen, spc)
+function PeridynamicsMaterial(name, type, bid, gen, spc)
     error("Not specified for type **$(typeof(spc))**")
 end
 
@@ -22,9 +30,20 @@ end
 """
     PeridynamicsMaterial(gen, spc::PeridynamicsMaterial; name="PM")
 """
-function PeridynamicsMaterial(gen, spc; name="PM")
+function PeridynamicsMaterial(bid, gen, spc; name="PM")
     type = minimum(gen.type):maximum(gen.type)
-    PeridynamicsMaterial(name, type, gen, spc)
+    PeridynamicsMaterial(name, type, bid, gen, spc)
+end
+
+
+"""
+    PeridynamicsMaterial(gen, spc::PeridynamicsMaterial; name="PM")
+"""
+function PeridynamicsMaterial(gen, spc; name="PM")
+    bid = PDBlockID[]
+    PDBlockID[] += 1
+    type = minimum(gen.type):maximum(gen.type)
+    PeridynamicsMaterial(name, type, bid, gen, spc)
 end
 
 struct GeneralMaterial
@@ -39,12 +58,14 @@ struct GeneralMaterial
     intact::BitArray{2}
     weighted_volume::Array{Float64,1}
     deformed::Vector{Bool}
+    skip_bb::Bool
 end
 
 
-function Base.show(io::IO, i::GeneralMaterial) 
+function Base.show(io::IO, i::GeneralMaterial)
     println(io, typeof(i))
     println(io, "type: ", unique(i.type))
+    println(io, "size: ", size(i.x))
     println(io, "horizon: ", i.horizon)
     println(io, "particle size: ", unique(i.particle_size))
 end
@@ -54,7 +75,7 @@ end
 
 General peridynamics material type.
 """
-function GeneralMaterial(y0, v0, x, volume, type, horizon; max_neigh=100, particle_size=0)
+function GeneralMaterial(y0, v0, x, volume, type, horizon; max_neigh=100, particle_size=0, skip_bb=false)
     family = cal_family(x, horizon, max_neigh)
     intact = family .> 0
     println("Average family members: ", sum(intact)/size(intact, 2))
@@ -70,7 +91,7 @@ function GeneralMaterial(y0, v0, x, volume, type, horizon; max_neigh=100, partic
     else
         deformed = true
     end
-    return GeneralMaterial(y0, v0, x, volume, type, particle_size, horizon, family, intact, m, [deformed])
+    return GeneralMaterial(y0, v0, x, volume, type, particle_size, horizon, family, intact, m, [deformed], skip_bb)
 end
 
 """
@@ -90,17 +111,28 @@ function Base.show(io::IO, i::SpecificMaterial)
 end
 
 
+
+function force_density_T(y::Array{Float64,2}, mat::PeridynamicsMaterial, ::Union{Type{Val{:cpu}}, Type{Val{:cuda}}}; kwargs...)
+    force_density_T(y, mat)
+end
+
+function force_density_T(y::Array{Float64,2}, mat::PeridynamicsMaterial, device::Symbol)
+    force_density_T(y::Array{Float64,2}, mat::PeridynamicsMaterial, Val{device})
+end
+
+
 function force_density(y::Array{Float64,2}, mat::PeridynamicsMaterial)
+    device = DEVICE[]
     if mat.general.deformed[1]
-        return force_density_T(y, mat)
+        return force_density_T(y, mat, device)
     else
         y_ = y .- y[:, 1] .+ mat.general.x[:, 1]
         if isapprox(y_, mat.general.x)
             println("Material force calculation passed ($(mat.name)). [Undeformed]")
-            return 0*y 
+            return 0*y
         else
             mat.general.deformed[1] = true
-            return force_density_T(y, mat)
+            return force_density_T(y, mat, device)
         end
     end
 end

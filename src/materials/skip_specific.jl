@@ -20,17 +20,15 @@ end
     SkipMaterial(type::UnitRange{Int64}, general::GeneralMaterial, specific::SkipSpecific)
 """
 struct SkipMaterial <: PeridynamicsMaterial
-    name::String
-    type::UnitRange{Int64}
-    general::GeneralMaterial
+    @PeridynamicsMaterial_gf 
     specific::SkipSpecific
 end
 
 """
     PeridynamicsMaterial(gen, spc::SkipSpecific)
 """
-function PeridynamicsMaterial(name, type, gen, spc::SkipSpecific)
-    SkipMaterial(name, type, gen, spc)
+function PeridynamicsMaterial(name, type, bid, gen, spc::SkipSpecific)
+    SkipMaterial(name, type, bid, gen, spc)
 end
 
 
