@@ -7,7 +7,7 @@ end
 # Definitions
 function DeltaScaleBC(bool, scale, fixpoint; onlyatstart=false)
     last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
-    xF = (env, BC) -> begin 
+    xF = (env, BC) -> begin
                 y = (BC.last .- vec(fixpoint)) .* (1 .+ vec(scale)*env.dt*env.time_step) .+ vec(fixpoint)
                 (y, BC.last)
             end
