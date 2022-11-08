@@ -34,6 +34,6 @@ end
 function check!(BC::ToFroBC, env)
     if ( env.time_step > BC.applyafter ) & (env.time_step % BC.freq == 0)
         BC.direction[] = -1*BC.direction[]
-    end    
+    end
 end
 
