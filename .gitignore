@@ -32,3 +32,6 @@ output
 notebooks/*.png
 notebooks/*.pfig
 .vscode
+
+examples/drafts
+examples/notebooks/output
