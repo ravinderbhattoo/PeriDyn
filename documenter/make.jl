@@ -2,12 +2,14 @@ push!(LOAD_PATH,"../src/")
 
 using Documenter #DocThemeIndigo
 using PeriDyn, PDMesh
+using Dates
 
 # indigo = DocThemeIndigo.install(PeriDyn)
 
 makedocs(sitename="PeriDyn",
         build = "../docs",
         format = Documenter.HTML(;
+            footer="Updated: $(now()). "*string(Documenter.HTML().footer),
             prettyurls = get(ENV, "CI", nothing) == "true",
             assets=["indigo.css"]
             ),
