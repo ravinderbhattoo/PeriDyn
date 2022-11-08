@@ -86,6 +86,44 @@ macro _ij(j, i, x)
     end
 end
 
+macro applyops(x)
+    local a,b,c = replace(x, "#"=>1), replace(x, "#"=>2), replace(x, "#"=>3)
+    if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
+        return quote
+            Meta.parse($a)
+            Meta.parse($b)
+            Meta.parse($c)
+        end
+    else
+        return quote
+            Meta.parse($a)
+            Meta.parse($b)
+        end
+    end
+end
+
+macro gatherops(x)
+    local a,b,c = replace(x, "#"=>1), replace(x, "#"=>2), replace(x, "#"=>3)
+    if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
+        return quote
+            (
+                Meta.parse($a),
+                Meta.parse($b),
+                Meta.parse($c)
+            )
+        end
+    else
+        return quote
+            (
+                Meta.parse($a),
+                Meta.parse($b)
+            )
+        end
+    end
+end
+
+
+
 get_ij(j, i, a) = @_ij(j, i, a) 
 
 function whatis(a, b, c)

@@ -1,28 +1,6 @@
 # PeriDyn
 Peridynamics implementation in Julia.
 
-## Block Plate Collision
-![plate_block](/resources/plate_block.gif)
-
-## Fracture
-![fracture](/resources/notch.gif)
-
-## Two Blocks Collision
-![collision](/resources/2blocks.gif)
-
-## Contributions
-- [Ravinder Bhattoo](https://github.com/ravinderbhattoo)
-
-
-## Material models
-1. Bond based peridynamics model
-2. Ordinary state based peridynamics model
-
-
-## Contact models
-1. Simple repulsive model (PE = 0.5Kx^2)
-
-
 ## Instructions
 
 ### Installation
@@ -33,4 +11,33 @@ Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
 ```
 
 ### Documentation
-[here]('http://PeriDyn.github.io/')
+[HTML (incomplete)](https://ravinderbhattoo.github.io/PeriDyn)
+[PDF](https://ravinderbhattoo.github.io/files/PeriDyn.pdf)
+
+## Material models
+1. Bond based peridynamics model
+2. Ordinary state based peridynamics model
+3. User defined material model
+
+
+## Contact models
+1. Linear and nonlinear repulsive model
+2. User defined contact model
+
+# Examples
+
+## Block Plate Collision
+<img src="/resources/plate_block.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
+
+## Fracture
+<img src="/resources/notch.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
+
+## Collision
+<img src="/resources/2blocks.gif" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" />
+
+# Videos
+
+|  Description | Video  |
+|---|---|
+|Disk Impact|<a href="http://www.youtube.com/watch?feature=player_embedded&v=RUdVr0Yh1jc " target="_blank"><img src="http://img.youtube.com/vi/RUdVr0Yh1jc/0.jpg" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" /></a>|
+|Wave propagation|<a href="http://www.youtube.com/watch?feature=player_embedded&v=q1N0aAdFYEs " target="_blank"><img src="http://img.youtube.com/vi/q1N0aAdFYEs/0.jpg" alt="IMAGE ALT TEXT HERE" width="480" height="360" border="1" /></a>|
