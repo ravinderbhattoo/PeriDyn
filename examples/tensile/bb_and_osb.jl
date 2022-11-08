@@ -55,7 +55,7 @@ env.Collect! = function (env, step)
 end
 
 
-out_dir="./output/sio21_OSB/$(typeof(solver))"
+out_dir="./output/tensile_sim_OSB/$(typeof(solver))"
 
 run!([env], Steps, solver;
     filewrite_freq=fwf, neigh_update_freq=nuf, out_dir=out_dir, start_at=0, ext=:jld)
