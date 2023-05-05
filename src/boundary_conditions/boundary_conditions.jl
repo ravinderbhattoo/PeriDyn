@@ -10,6 +10,13 @@ Abstract class for boundary conditions.
 abstract type BoundaryCondition end
 abstract type BoundaryConditionat0 end
 
+function _cudaconvert(x::Vector{T}) where T <: BoundaryCondition
+    _cudaconvert.(x)
+end
+
+function _cudaconvert(x::T) where T <: BoundaryCondition
+    T((_cudaconvert(getfield(x, k)) for k in fieldnames(T))...)
+end
 
 function Base.show(io::IO, i::BoundaryCondition)
     println(io, typeof(i))
@@ -28,8 +35,8 @@ function check!(BC::T, env) where T <: BoundaryCondition
 end
 
 @def general_bc_p begin
-    bool::Array{Bool, 1}
-    last::Array{Float64, 2}
+    bool::AbstractArray{T, 1} where T
+    last::AbstractArray{T, 2} where T
     onlyatstart::Bool
     xF::Function
     vF::Function

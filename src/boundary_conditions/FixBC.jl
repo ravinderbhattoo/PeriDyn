@@ -2,12 +2,13 @@ export FixBC
 
 struct FixBC <: BoundaryCondition
     @general_bc_p
-    # bool::Array{Bool, 1}
-    # last::Array{Float64, 2}
+    # bool::AbstractArray{Bool, 1}
+    # last::AbstractArray{Float64, 2}
     # onlyatstart::Bool
     # xF::Function
     # vF::Function
 end
+
 
 
 """

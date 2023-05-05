@@ -6,9 +6,11 @@ end
 
 # Definitions
 function DeltaScaleBC(bool, scale, fixpoint; onlyatstart=false)
+    scale = deviceconvert(scale)
+    fixpoint = deviceconvert(fixpoint)
     last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
     xF = (env, BC) -> begin
-                y = (BC.last .- vec(fixpoint)) .* (1 .+ vec(scale)*env.dt*env.time_step) .+ vec(fixpoint)
+                y = (BC.last .- reshape(fixpoint, :)) .* (1 .+ reshape(scale, :)*env.dt*env.time_step) .+ reshape(fixpoint, :)
                 (y, BC.last)
             end
     vF = (env, BC) -> ( 0.0, BC.last )
