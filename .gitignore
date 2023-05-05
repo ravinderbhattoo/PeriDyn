@@ -28,10 +28,12 @@ Manifest.toml
 *.png
 *.pfig
 .fuse*
-output
-notebooks/*.png
-notebooks/*.pfig
 .vscode
+.DS_Store
 
+examples/*.png
+examples/*.pfig
 examples/drafts
+
+output
 examples/notebooks/output

@@ -1,3 +1,4 @@
+__precompile__()
 module PeriDyn
 
 using CUDA
@@ -11,7 +12,6 @@ using ProgressBars
 using JLD
 using Flux
 using Zygote
-using PDMesh
 
 using Optim
 
@@ -22,25 +22,27 @@ const PDBlockID = Ref{Int64}(1)
 SOLVERS =  Dict()
 const DEVICE = Ref{Symbol}(:cpu)
 
-function set_cuda(x)
-    function fn(device)
-        DEVICE[] = device
-        println("PeriDyn: DEVICE set to $(DEVICE[])")
-    end
-    if x
-        if CUDA.functional()
-            fn(:cuda)
-            PDMesh.set_cuda(x)
-        else
+function set_device(device)
+    device = get_valid_device(device)
+    DEVICE[] = device
+    println("PeriDyn: DEVICE set to $(DEVICE[])")
+end
+
+function get_valid_device(x)
+    out = x
+    if x==:cuda
+        if !CUDA.functional()
+            out = :cpu
             println("PeriDyn: CUDA is not available.")
         end
     else
-        fn(:cpu)
+        out = :cpu
     end
+    return out
 end
 
 function reset_cuda()
-    set_cuda(CUDA.functional())
+    set_device(:cuda)
 end
 
 
