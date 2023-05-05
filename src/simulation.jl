@@ -25,13 +25,20 @@ mutable struct GeneralEnv
     Out::Any
 end
 
-function makecuda!(x::GeneralEnv)
-    _makecuda!(x)
-    for block in x.material_blocks
-        _makecuda!(block.general)
-    end
+function _cudaconvert(x::Vector{GeneralEnv})
+    _cudaconvert.(x)
 end
 
+function _cudaconvert(x::T) where T <: GeneralEnv
+    function fn(x, k)
+        if k!=:Out
+            _cudaconvert(getfield(x, k))
+        else
+            getfield(x, k)
+        end
+    end
+    T(( _cudaconvert(getfield(x, k)) for k in fieldnames(T))...)
+end
 
 """
     Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2)
@@ -56,8 +63,8 @@ function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2
 
     for mat in materials[2:end]
         type = vcat(type, mat.general.type)
-        y = hcat(y,mat.general.y)
-        v = hcat(v,mat.general.velocity)
+        y = hcat(y, mat.general.y)
+        v = hcat(v, mat.general.velocity)
         volume = vcat(volume,mat.general.volume)
         intact = hcat(intact, sum(mat.general.intact, dims=1))
         mass_ = 1*mat.general.volume
@@ -80,10 +87,13 @@ function Env(id::Int64,materials,short_range_repulsion,boundary_conds,dt;state=2
 
     boundaries = (_cm .- (0.5 + bskin)*_L, _cm .+ (0.5 + bskin)*_L)
 
-    return GeneralEnv(id,type,bid,0*type,state,y,v,0v,0v,volume, reshape(intact, :),
+
+    env = GeneralEnv(id,type,bid,0*type,state,y,v,0v,0v,volume, reshape(intact, :),
                 mass,0,dt,zeros(2,2),
                 boundary_conds,short_range_repulsion,materials,boundaries,
                 nothing,nothing,nothing)
+
+    return deviceconvert(env)
 end
 
 """

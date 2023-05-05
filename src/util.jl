@@ -19,11 +19,11 @@ mod(X) = sqrt(mapreduce((x) -> x^2, +, X))
 
 
 """
-    horizon_correction(dr,r,hr)
+    horizon_correction(dr, ps, hr)
 
 It gives horizon correction factor (It will give 1 as of now).
 """
-function horizon_correction(dr, r, hr)
+function horizon_correction(dr, ps, hr)
     """
     Horizon correction for perdynamic model.
     Args
@@ -41,12 +41,22 @@ function influence_function(dr)
     return 1 / get_magnitude(dr)
 end
 
+
 """
-    dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cpu}})
+    dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
 
 It gives dilatation as given ordinary state material model.
 """
-function dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cpu}})
+function dilatation!(theta, y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
+    theta .= dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
+end
+
+"""
+    dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
+
+It gives dilatation as given ordinary state material model.
+"""
+function dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
     N = size(family, 2)
     function with_if_cal_theta_ij(i, j)
         X = get_ij(j, i, x)
@@ -59,31 +69,44 @@ function dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::T
 
     inner_map(i, js) = map_reduce((j) -> with_if_cal_theta_ij(i, j), +, js)
     return map((i) -> 3/m[i]*inner_map(i, family[intact[:, i], i]), 1:N)
-
 end
 
+
+"""
+    dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cuda}})
+
+It gives dilatation as given ordinary state material model.
+"""
+function dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cuda}})
+    theta = CUDA.CuArray(zeros(eltype(volume), size(volume)))
+    dilatation!(theta, y, x, intact, family, volume, m, particle_size, horizon, device)
+    return theta
+end
 
 """
     dilatation(y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cuda}})
 
 It gives dilatation as given ordinary state material model.
 """
-function dilatation!(theta, y, x, intact, family, volume, m, particle_size, horizon, ::Type{Val{:cuda}})
+function dilatation!(theta, l1, y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cuda}})
     function cal_theta(theta, y, x, intact, family, volume, m)
         index = (blockIdx().x - 1) * blockDim().x + threadIdx().x
         stride = blockDim().x * gridDim().x
         for i in index:stride:length(volume)
+            theta[i] = 0.0
+            _i = i
             for k in 1:size(family, 1)
                 if intact[k,i]
                     j = family[k,i]
+                    _j = j
                     _X = sqrt((x[1,j]-x[1,i])^2 + (x[2,j]-x[2,i])^2 + (x[3,j]-x[3,i])^2)
-                    _Y = sqrt((y[1,j]-y[1,i])^2 + (y[2,j]-y[2,i])^2 + (y[3,j]-y[3,i])^2)
+                    _Y = sqrt((y[1,_j]-y[1,_i])^2 + (y[2,_j]-y[2,_i])^2 + (y[3,_j]-y[3,_i])^2)
                     extention = _Y - _X
-                    # s += influence_function(X) * _X * extention * volume[j] * horizon_correction(X, particle_size, horizon)
-                    theta[i] += 1/_X * _X * extention * volume[j] #* horizon_correction(X, particle_size, horizon)
+                    # s += influence_function(X) * |X| * extention * volume[j] * horizon_correction
+                    theta[i] += 1/_X * _X * volume[j] * extention  #* horizon_correction(X, particle_size, horizon)
                 end
             end
-            theta[i] *= 3/m[i]
+            theta[i] *= 3 / m[i]
         end
         return nothing
     end
@@ -93,7 +116,11 @@ function dilatation!(theta, y, x, intact, family, volume, m, particle_size, hori
     nthreads = Base.min(length(volume), config.threads)
     nblocks =  cld(length(volume), nthreads)
 
+    theta .= 0.0
     CUDA.@sync kernel(theta, y, x, intact, family, volume, m; threads=nthreads, blocks=nblocks)
+
+    @check_nan theta "theta"
+
 end
 
 
@@ -152,14 +179,10 @@ end
 
 Fill cells with material points.
 """
-function get_cells(x::Array{Float64,2}, horizon::Number; max_part=30)
-    _min = minimum(x, dims = 2)
-    _max = maximum(x, dims = 2)
-
-    # vol = prod(_max .- _min)
-    # nN = size(x, 2)
-    # density = nN / vol
-
+function get_cells(x::AbstractArray{Float64,2}, horizon::Number; max_part=30)
+    x = Array(x)
+    _min = Array(minimum(x, dims = 2))
+    _max = Array(maximum(x, dims = 2))
     N = @. Int(max(1, min(max_part, fld((_max - _min), horizon))))
     cells = [Vector{Int}() for i in 1:prod(N)]
     cell_neighs = Vector{Vector{Int}}(undef, prod(N))
@@ -300,7 +323,7 @@ function SymMat(x)
     SymMat(x, Int((-1 + sqrt(1 + 4 * 2 * L)) / 2))
 end
 
-function Base.setindex!(m::PeriDyn.SymMat, a, i::Int64, j::Int64)
+function Base.setindex!(m::SymMat, a, i::Int64, j::Int64)
     @assert((i <= m.N) & (j <= m.N))
     if j > i
         i, j = j, i
@@ -383,3 +406,59 @@ end
 
 perturb(x::AbstractArray; e=1.0e-6) = e*randn(size(x)...) .+ x
 perturb(i::Int64, j::Int64; e=1.0e-6) = e*randn(i, j)
+
+
+
+"""
+    unpack(d::Dict)
+Unpack a dictionary into its components.
+# Arguments
+- `d::Dict`: Dictionary to be unpacked.
+# Returns
+- `x::Array{Float64, 1}`: x coordinates.
+- `v::Array{Float64, 1}`: v coordinates.
+- `y::Array{Float64, 1}`: y coordinates.
+- `volume::Array{Float64, 1}`: Volume of the mesh.
+- `type::Array{Int64, 1}`: Type of the mesh.
+"""
+function unpack(d::Dict)
+    return d[:x], d[:v], d[:y], d[:volume], d[:type]
+end
+
+"""
+    repack(args...; keys_ = (:x, :v, :y, :volume, :type))
+Repack a dictionary from its components.
+# Arguments
+- `args...`: Components to be packed.
+- `keys_ = (:x, :v, :y, :volume, :type)`: Keys of the dictionary.
+# Returns
+- `d::Dict`: Dictionary containing the components.
+"""
+function repack(args...; keys_ = (:x, :v, :y, :volume, :type))
+    d = Dict()
+    for i in 1:5
+        d[keys_[i]] = args[i]
+    end
+    d
+end
+
+"""
+    repack!(d::Dict, keys_, vals)
+Repack a dictionary from its components inplace.
+# Arguments
+- `d::Dict`: Dictionary to be repacked.
+- `keys_`: Keys of the dictionary.
+- `vals`: Values of the dictionary.
+# Returns
+- `d::Dict`: Dictionary containing the components.
+"""
+function repack!(d::Dict, keys_, vals)
+    if length(keys_)==length(vals)
+        for i in 1:length(vals)
+            d[keys_[i]] = vals[i]
+        end
+    else
+        error("Lengths are not same.")
+    end
+    d
+end
