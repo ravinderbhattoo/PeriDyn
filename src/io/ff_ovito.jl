@@ -51,10 +51,9 @@ end
 It writes the data file.
 """
 function write_ovito(filename::String; kwargs...)
-    dict = Dict(kwargs)
-    col_names = sort(collect(keys(dict)))
-    args = (dict[k] for k in col_names)
-    item = kwargs[col_names[1]]
+    col_names = sort(collect(keys(kwargs)))
+    args = [Array(kwargs[k]) for k in col_names]
+    item = kwargs[:id]
 
     if length(size(item)) > 1
         N = size(item, 2)
@@ -77,9 +76,12 @@ function write_ovito(filename::String; kwargs...)
     end
 
     write(file, "$N \n$(comment)\n")
-    for j in 1:N
-        row = foldr((a, b) -> "$a $b", foldr((a, b) -> (a..., b...), [getitems(j, arg) for arg in args]))
-        write(file, "$row \n")
+
+    CUDA.allowscalar() do
+        for j in 1:N
+            row = foldr((a, b) -> "$a $b", foldr((a, b) -> (a..., b...), [getitems(j, arg) for arg in args]))
+            write(file, "$row \n")
+        end
     end
     close(file)
 end
