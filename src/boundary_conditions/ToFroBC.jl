@@ -10,12 +10,13 @@ end
 
 # Definitions
 function ToFroBC(bool, rate, freq; applyafter=0, onlyatstart=false)
+    rate = deviceconvert(rate)
     last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
     xF = (env, BC) -> begin
-        y = BC.last .+ vec(env.dt * BC.direction[] * rate)
+        y = BC.last .+ reshape(env.dt * BC.direction[] * rate, :)
         (y, y)
     end
-    vF = (env, BC) -> ( vec(BC.direction[] * rate), BC.last)
+    vF = (env, BC) -> ( reshape(BC.direction[] * rate, :), BC.last)
     ToFroBC(bool, last, onlyatstart, xF, vF, Ref(1), freq, applyafter)
 end
 
