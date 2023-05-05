@@ -10,7 +10,7 @@ struct LJRepulsionModel12<:RepulsionModel12
     alpha::Float64
     epsilon::Float64
     equi_dist::Float64
-    neighs::Array{Int64,2}
+    neighs::AbstractArray{Int64,2}
     distance::Float64
     max_neighs::Int64
 end
@@ -20,7 +20,7 @@ struct LJRepulsionModel11<:RepulsionModel11
     material::GeneralMaterial
     alpha::Float64
     epsilon::Float64
-    neighs::Array{Int64,2}
+    neighs::AbstractArray{Int64,2}
     distance::Float64
     max_neighs::Int64
 end

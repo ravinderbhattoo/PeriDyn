@@ -27,7 +27,7 @@ macro check_nan(var, name)
         quote
             local var = $(esc(var))
             local name = $(esc(name))
-            if any(isnan, var) 
+            if any(isnan, var)
                 error("nan in $name")
             end
             if any(isinf, var)
@@ -37,6 +37,15 @@ macro check_nan(var, name)
     else
     end
 end
+
+function printsize(var...)
+    for var1 in var
+        print(size(var1), ", ")
+    end
+    var
+end
+
+
 
 
 macro timeit(ex, name)
@@ -69,18 +78,18 @@ macro _magnitude(a)
     end
 end
 
-get_magnitude(a) = @_magnitude(a) 
+get_magnitude(a) = @_magnitude(a)
 
 macro _ij(j, i, x)
     if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
         quote
-            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))], 
-                    $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))], 
+            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))],
+                    $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))],
                     $(esc(x))[3,$(esc(j))] - $(esc(x))[3,$(esc(i))]]
         end
     else
         quote
-            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))], 
+            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))],
                     $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))]]
         end
     end
@@ -124,7 +133,7 @@ end
 
 
 
-get_ij(j, i, a) = @_ij(j, i, a) 
+get_ij(j, i, a) = @_ij(j, i, a)
 
 function whatis(a, b, c)
     println(a)

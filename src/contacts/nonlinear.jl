@@ -10,7 +10,7 @@ struct NonLinearRepulsionModel12<:RepulsionModel12
     exponent::Float64
     stifness::Float64
     equi_dist::Float64
-    neighs::Array{Int64,2}
+    neighs::AbstractArray{Int64,2}
     distance::Float64
     max_neighs::Int64
 end
@@ -21,7 +21,7 @@ struct NonLinearRepulsionModel11<:RepulsionModel11
     material::GeneralMaterial
     exponent::Float64
     stifness::Float64
-    neighs::Array{Int64,2}
+    neighs::AbstractArray{Int64,2}
     distance::Float64
     max_neighs::Int64
 end
@@ -94,7 +94,7 @@ function get_repulsion_force_fn(RepMod::NonLinearRepulsionModel11)
         if del_x < 0
             return (0.0, 0.0, 0.0)
         else
-            s = ( K * strain^expo )  / mag_dr 
+            s = ( K * strain^expo )  / mag_dr
             return (s*dr[1], s*dr[2], s*dr[3])
         end
     end
