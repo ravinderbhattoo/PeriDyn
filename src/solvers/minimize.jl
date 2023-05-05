@@ -8,7 +8,7 @@ end
 
 
 function QSDrag(step_size, drag; max_iter=1000, x_tol=1.0e-3, f_tol=1.0e-3)
-    QSDrag(step_size, drag, max_iter, x_tol, f_tol)
+    deviceconvert(QSDrag(step_size, drag, max_iter, x_tol, f_tol))
 end
 
 
@@ -57,7 +57,7 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
 
     mask = .!(mask)
 
-    opt = zeros(eltype(env.f), size(env.f[:, mask]))
+    opt = similar(env.f[:, mask])
 
     k = lambda/10
 
@@ -110,7 +110,7 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
         if i==max_iter
             println("Maximum iteration, iter $i ($max_iter) reached. x_tol $x_tol_ !<= $x_tol and f_tol $f_tol_ !<= $f_tol")
         end
-        set_postfix(iter, X_tol=x_tol_, F_tol=f_tol_, MaxF=maximum(env.f))
+        set_postfix(iter, Steps=i, X_tol=round(x_tol_, digits=6), F_tol=round(f_tol_, digits=6), MaxF=round(maximum(env.f), digits=6))
     end
 
     for bc in env.boundary_conditions

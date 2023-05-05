@@ -10,6 +10,7 @@ struct BondBasedSpecific{T <: AbstractFloat} <: SpecificMaterial
     func::Function
 end
 
+
 function BondBasedSpecific(bond_stiffness::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; func=nothing)
     if isa(func, Nothing)
         func = bond_force
@@ -36,15 +37,15 @@ end
 
 Calculates force density (actually acceleration) for bond based material type.
 """
-function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial; kwargs...)
-    force_density_T(y, mat, :cpu; kwargs)
+function force_density_T(f, y::AbstractArray{Float64,2}, limits, mat::BondBasedMaterial; kwargs...)
+    force_density_T(f, y, limits, mat, :cpu; kwargs)
 end
 
 @inline function bond_force(s, bond_stiffness)
     return bond_stiffness * s
 end
 
-function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial, ::Type{Val{:cpu}}; particles=nothing)
+function force_density_T(f, y::AbstractArray{Float64,2}, limits, mat::BondBasedMaterial, ::Type{Val{:cpu}}; particles=nothing)
     types = mat.general.type
     x = mat.general.x
     intact = mat.general.intact
@@ -54,9 +55,9 @@ function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial, ::Type{Val
     stiffness = mat.specific.bond_stiffness
 
     if isnothing(particles)
-        _N = 1:size(family, 2)
+        _N = 1:size(family, 2) + limits[1] - 1
     else
-        _N = particles
+        _N = particles + limits[1] - 1
     end
 
     M = size(family, 1)
@@ -107,7 +108,7 @@ end
 
 Calculates force density (actually acceleration) for bond based material type.
 """
-function force_density_T(y::Array{Float64,2}, mat::BondBasedMaterial, ::Type{Val{:cuda}}; particles=nothing)
+function force_density_T(force::AbstractArray{Float64,2}, y::AbstractArray{Float64,2}, limits, mat::BondBasedMaterial, ::Type{Val{:cuda}}; particles=nothing)
 
     force = CUDA.CuArray(zeros(eltype(y), size(y)))
     y = CUDA.CuArray(y)

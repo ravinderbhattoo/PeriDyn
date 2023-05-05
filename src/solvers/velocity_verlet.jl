@@ -14,6 +14,7 @@ velocity_verlet_step!(env::GeneralEnv)
 Implement a single step of velocity verlet algorithm.
 """
 function velocity_verlet_step!(env::GeneralEnv, solver::DSVelocityVerlet)
+
     c = env.dt/2
     env.v .+= c.*env.f
     env.y .+= env.dt.*env.v
