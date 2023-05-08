@@ -141,19 +141,19 @@ function whatis(a, b, c)
     println(c)
 end
 
-macro map_reduce(f, op, iter)
+macro map_reduce(f, op, iter, init)
     if PeriDyn.MULTI_THREAD_REF[]
         quote
-            Folds.mapreduce($(esc(f)), $(esc(op)), $(esc(iter)))
+            Folds.mapreduce($(esc(f)), $(esc(op)), $(esc(iter)); init=$(esc(init)))
         end
     else
         quote
-            mapreduce($(esc(f)), $(esc(op)), $(esc(iter)))
+            mapreduce($(esc(f)), $(esc(op)), $(esc(iter)); init=$(esc(init)))
         end
     end
 end
 
-map_reduce(f, op, iter) = @map_reduce(f, op, iter)
+map_reduce(f, op, iter; init=0.0) = @map_reduce(f, op, iter, init)
 
 function refresh()
     @eval(

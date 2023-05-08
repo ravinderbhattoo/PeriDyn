@@ -1,22 +1,17 @@
-__precompile__()
 module PeriDyn
 
 using CUDA
 using Base: Bool
 using Folds
 using LinearAlgebra
-
 using Dates
 using StaticArrays
 using ProgressBars
 using JLD
 using Flux
 using Zygote
-
 using Optim
 
-# using Flux
-# using Zygote
 
 const PDBlockID = Ref{Int64}(1)
 SOLVERS =  Dict()
