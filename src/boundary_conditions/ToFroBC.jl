@@ -17,7 +17,7 @@ function ToFroBC(bool, rate, freq; applyafter=0, onlyatstart=false)
         (y, y)
     end
     vF = (env, BC) -> ( reshape(BC.direction[] * rate, :), BC.last)
-    ToFroBC(bool, last, onlyatstart, xF, vF, Ref(1), freq, applyafter)
+    deviceconvert(ToFroBC(bool, last, onlyatstart, xF, vF, Ref(1), freq, applyafter))
 end
 
 function MoveBC(bool, rate; kwargs...)

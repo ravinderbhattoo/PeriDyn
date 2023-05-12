@@ -19,7 +19,7 @@ function FixBC(bool; onlyatstart=false)
     last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
     xF = (env, BC) -> (BC.last, BC.last)
     vF = (env, BC) -> (0.0, BC.last)
-    FixBC(bool, last, onlyatstart, xF, vF)
+    deviceconvert(FixBC(bool, last, onlyatstart, xF, vF))
 end
 
 function apply_bc_at0!(env, BC::FixBC)

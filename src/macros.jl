@@ -45,9 +45,6 @@ function printsize(var...)
     var
 end
 
-
-
-
 macro timeit(ex, name)
     if TIMEIT_REF[]
         quote
@@ -153,13 +150,13 @@ macro map_reduce(f, op, iter, init)
     end
 end
 
-map_reduce(f, op, iter; init=0.0) = @map_reduce(f, op, iter, init)
+map_reduce(f, op, iter; init = 0.0) = @map_reduce(f, op, iter, init)
 
 function refresh()
     @eval(
         begin
             PeriDyn.get_magnitude(a) = PeriDyn.@_magnitude(a)
             PeriDyn.get_ij(j, i, a) = PeriDyn.@_ij(j, i, a)
-            PeriDyn.map_reduce(f, op, iter) = PeriDyn.@map_reduce(f, op, iter)
+            PeriDyn.map_reduce(f, op, iter; init=0.0) = PeriDyn.@map_reduce(f, op, iter, init)
         end)
 end

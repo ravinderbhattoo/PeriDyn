@@ -14,9 +14,8 @@ function DeltaScaleBC(bool, scale, fixpoint; onlyatstart=false)
                 (y, BC.last)
             end
     vF = (env, BC) -> ( 0.0, BC.last )
-    DeltaScaleBC(bool, last, onlyatstart, xF, vF)
+    deviceconvert(DeltaScaleBC(bool, last, onlyatstart, xF, vF))
 end
-
 
 # Implementation
 function apply_bc_at0!(env, BC::DeltaScaleBC)

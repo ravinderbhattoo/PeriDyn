@@ -21,7 +21,7 @@ function ScaleFixWaitBC(bool, scale, fixpoint, wait, scalebool; applyafter=0, on
             BC.last .= env.y[:, BC.bool]
         end
     end
-    ScaleFixWaitBC(bool, last, onlyatstart, xF, vF, checkF)
+    deviceconvert(ScaleFixWaitBC(bool, last, onlyatstart, xF, vF, checkF))
 end
 
 # Implementation

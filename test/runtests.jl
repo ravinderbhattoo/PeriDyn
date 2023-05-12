@@ -1,7 +1,6 @@
-using Test, SafeTestsets
-using PeriDyn, PDMesh
-PD = PeriDyn
+using Test, SafeTestsets, PeriDyn, PDMesh
 
+PD = PeriDyn
 
 include("./util_test.jl")
 # include("./contacts_test.jl")

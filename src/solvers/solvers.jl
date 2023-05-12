@@ -220,9 +220,6 @@ function update_acc!(env::GeneralEnv)
         end
     end
 
-    # if NaN occurs, throw error
-    @check_nan env.f "env.f from repulsive forces."
-
 end
 
 
