@@ -1,7 +1,6 @@
 
-export horizon_correction, dilatation, dilatation_theta, influence_function, weighted_volume, cal_family!
+export horizon_correction, dilatation, dilatation_theta, dilatation!, influence_function, weighted_volume, cal_family!
 export _O, _I, _unit
-
 
 @inline function _O(x::AbstractArray)
     return 0 * x
@@ -40,7 +39,12 @@ It gives influence function factor (It will give 1/r as of now).
 function influence_function(dr)
     return 1 / get_magnitude(dr)
 end
+ωᵢⱼ = influence_function
 
+function dilatation!(y, mat, device)
+    gen = mat.general
+    dilatation!(mat.specific.theta, y, gen.x, gen.intact, gen.family, gen.volume, gen.weighted_volume, gen.particle_size, gen.horizon, device)
+end
 
 """
     dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
@@ -48,7 +52,7 @@ end
 It gives dilatation as given ordinary state material model.
 """
 function dilatation!(theta, y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
-    theta .= dilatation(y, x, intact, family, volume, m, particle_size, horizon, device::Type{Val{:cpu}})
+    theta .= dilatation(y, x, intact, family, volume, m, particle_size, horizon, device)
 end
 
 """

@@ -110,7 +110,14 @@ end
 function Base.show(io::IO, i::SpecificMaterial)
     println(io, typeof(i))
     for j in fieldnames(typeof(i))
-        println(io, j, ": ", getproperty(i, j))
+        item = getproperty(i, j)
+        # check if iterable
+        if isa(item, AbstractArray) && mapreduce(*, +, size(item)) > 10
+            mapreduce(*, +, size(item)) > 10
+            println(io, j, ": ", typeof(item), size(item))
+        else
+            println(io, j, ": ", item)
+        end
     end
 end
 
@@ -142,6 +149,63 @@ function force_density(f, y, limits, mat::PeridynamicsMaterial)
         end
     end
 end
+
+
+
+"""
+    force_density_T(f, y, limits, mat::PeridynamicsMaterial, device::Type{Val{:cpu}}; particles=nothing)
+
+Calculates force density (actually acceleration) for ordinary state based material type.
+"""
+function force_density_T(f_, y_, limits, mat::PeridynamicsMaterial, device::Type{Val{:cpu}}; particles=nothing)
+
+    y = y_[:, limits[1]:limits[2]]
+    numparticles = size(mat.general.family, 2)
+    max_neighs = size(mat.general.family, 1)
+
+    if isnothing(particles)
+        N = 1:numparticles
+        N_ = N .+ (limits[1] .- 1)
+    else
+        N_ = particles
+        N = N_ .- (limits[1] .- 1)
+    end
+    M = max_neighs
+    ARGS = map((i) -> (i, 1:M), N)
+
+    out_of_loop!(y, mat, device)
+
+    @inbounds function with_if_cal_force_ij(i, k)
+        if mat.general.intact[k,i]
+            j = mat.general.family[k,i]
+            X = get_ij(j,i, mat.general.x)
+            Y = get_ij(j,i, y)
+            yij = get_magnitude(Y)
+            xij = get_magnitude(X)
+            extention = yij - xij
+            s = extention/xij
+            wij = influence_function(X)
+            wji = influence_function(-X)
+            type1 = mat.general.type[i] - mat.type.start + 1
+            type2 = mat.general.type[j] - mat.type.start + 1
+            if s < mat.specific.critical_stretch[type1, type2]
+                return force_density_t_ij(mat, i, j, X, Y, xij, yij, extention, s, wij, wji, type1, type2)
+            else
+                mat.general.intact[k,i] = false
+                return [0.0, 0.0, 0.0]
+            end
+        else
+            return [0.0, 0.0, 0.0]
+        end
+    end
+
+    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds; init=[0.0, 0.0, 0.0])
+    # inner_map(i, inds) = mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+    outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)
+
+    f_[:, N_] .+= hcat(outer_map(ARGS)...)
+end
+
 
 function _cudaconvert(x::Vector{T}) where T <: PeridynamicsMaterial
     _cudaconvert.(x)

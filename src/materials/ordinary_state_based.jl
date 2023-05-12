@@ -36,8 +36,6 @@ function PeridynamicsMaterial(name, type, bid, gen, spc::OrdinaryStateBasedSpeci
     OrdinaryStateBasedMaterial(name, type, bid, gen, spc)
 end
 
-
-
 """
     force_density_T(mat::BondBasedMaterial)
 
@@ -47,77 +45,19 @@ function force_density_T(f, y::AbstractArray{Float64,2}, limits, mat::OrdinarySt
     force_density_T(f, y, limits, mat, :cpu; kwargs)
 end
 
+function out_of_loop!(y_, mat::OrdinaryStateBasedMaterial, device)
+    dilatation!(y_, mat, device)
+end
 
-"""
-    force_density_T(f, y, limits, mat::OrdinaryStateBasedMaterial, device::Type{Val{:cpu}}; particles=nothing)
-
-Calculates force density (actually acceleration) for ordinary state based material type.
-"""
-function force_density_T(f_, y_, limits, mat::OrdinaryStateBasedMaterial, device::Type{Val{:cpu}}; particles=nothing)
-    types = mat.general.type
-    gen = mat.general
-    m = gen.weighted_volume
-    intact = gen.intact
-    family = gen.family
-    volume = gen.volume
+function force_density_t_ij(mat::OrdinaryStateBasedMaterial, i, j, X, Y, xij, yij, extention, s, wij, wji, type1, type2)
+    m = mat.general.weighted_volume
     theta = mat.specific.theta
-    x = gen.x
-    y = y_[:, limits[1]:limits[2]]
-
-    if isnothing(particles)
-        N = 1:size(family, 2)
-        N_ = N .+ (limits[1] .- 1)
-    else
-        N_ = particles
-        N = N_ .- (limits[1] .- 1)
-    end
-
-    M = size(family, 1)
-    ARGS = map((i) -> (i, 1:M), N)
-
-    dilatation!(theta, y, x, intact, family, volume, m,
-                            mat.general.particle_size,
-                            mat.general.horizon,
-                            device)
-
-    @inbounds function with_if_cal_force_ij(i, k)
-        if intact[k,i]
-            j = family[k,i]
-            X = get_ij(j,i,x)
-            Y = get_ij(j,i,y)
-            yij = get_magnitude(Y)
-            xij = get_magnitude(X)
-
-            extention = yij - xij
-            s = extention/xij
-
-            wij = influence_function(X)
-            wji = influence_function(-X)
-            type1 = types[i] - mat.type.start + 1
-            type2 = types[j] - mat.type.start + 1
-            if s < mat.specific.critical_stretch[type1, type2]
-                K = mat.specific.bulk_modulus[type1, type2]
-                G = mat.specific.shear_modulus[type1, type2]
-                a_, b_ = wij/m[i], wji/m[j]
-                t =  (3*K-5*G) * (theta[i]*xij*a_ + theta[j]*xij*b_)  + 15*G*extention*(a_ + b_)
-                t = t*volume[j]
-                return t / yij *Y
-            else
-                intact[k,i] = false
-                return [0.0, 0.0, 0.0]
-            end
-        else
-            return [0.0, 0.0, 0.0]
-        end
-    end
-
-
-    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds)
-
-    # inner_map(i, inds) = mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
-    outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)
-
-    f_[:, N_] .+= hcat(outer_map(ARGS)...)
+    K = mat.specific.bulk_modulus[type1, type2]
+    G = mat.specific.shear_modulus[type1, type2]
+    a_, b_ = wij/m[i], wji/m[j]
+    t =  (3*K-5*G) * (theta[i]*xij*a_ + theta[j]*xij*b_)  + 15*G*extention*(a_ + b_)
+    t = t * mat.general.volume[j]
+    return t / yij * Y
 end
 
 
