@@ -12,15 +12,16 @@ using Flux
 using Zygote
 using Optim
 
-
 const PDBlockID = Ref{Int64}(1)
 SOLVERS =  Dict()
 const DEVICE = Ref{Symbol}(:cpu)
 
+include("./macros.jl") # macros
+
 function set_device(device)
     device = get_valid_device(device)
     DEVICE[] = device
-    println("PeriDyn: DEVICE set to $(DEVICE[])")
+    log_impinfo("PeriDyn: DEVICE set to $(DEVICE[])")
 end
 
 function get_valid_device(x)
@@ -28,10 +29,11 @@ function get_valid_device(x)
     if x==:cuda
         if !CUDA.functional()
             out = :cpu
-            println("PeriDyn: CUDA is not available.")
+            log_impinfo("PeriDyn: CUDA is not available.")
         end
     else
         out = :cpu
+        log_impinfo("PeriDyn: Number of threads = $(Threads.nthreads()).")
     end
     return out
 end
@@ -41,7 +43,6 @@ function reset_cuda()
 end
 
 
-include("./macros.jl") # macros
 include("./simulation.jl") # define simulation environment
 
 #material models

@@ -1,17 +1,20 @@
 using Pkg
 Pkg.activate("./test")
+Pkg.add("Revise")
+Pkg.add(url="https://github.com/ravinderbhattoo/PDMaterialPoints.jl")
+Pkg.develop(path=".")
 Pkg.instantiate()
 
 using Revise
 using PeriDyn
-using PDMesh
+using PDMaterialPoints
 
 # new block
 DIR = "."
 device = :cpu
 
 PeriDyn.set_device(device)
-PDMesh.set_device(device)
+PDMaterialPoints.set_device(device)
 
 # new block
 # Define a block of material and its properties

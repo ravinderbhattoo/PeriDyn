@@ -259,7 +259,7 @@ Update neighbour list for repulsive force calculation (1-2 interaction).
 
 """
 function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothing)
-    println("Updating repulsive neighs ...")
+    log_info("Updating repulsive neighs ...")
     _mask1 = false
     for i in RM.pair[1]
         _mask1 = _mask1 .| (type .== i)
@@ -294,12 +294,12 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothin
         end
         family = sort(family,dims=1)
         RM.neighs[1:end, mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
-        println("Average repulsive neighs: $(sum(RM.neighs .> 0.5) / (1+size(x1, 2)))")
+        log_info("Average repulsive neighs: $(sum(RM.neighs .> 0.5) / (1+size(x1, 2)))")
     else
         RM.neighs[1:end, 1:end] .= 0
-        println("No repulsive neighs.")
+        log_info("No repulsive neighs.")
     end
-    println("Done")
+    log_info("Done")
 end
 
 function update_repulsive_neighs!(y, type, RM::RepulsionModel11; kwargs...)
@@ -348,7 +348,7 @@ function update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, fami
             end
         end
     end
-    println("Average repulsive neighs: $(sum(neighbors .> 0.5)/size(x, 2))")
+    log_info("Average repulsive neighs: $(sum(neighbors .> 0.5)/size(x, 2))")
 end
 
 """

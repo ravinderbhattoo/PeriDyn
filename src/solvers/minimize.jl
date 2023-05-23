@@ -31,8 +31,10 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
     dt = step_size
     ps = env.material_blocks[1].general.particle_size
 
-    x_tol_ = max(f_tol * dt^2, ps * 10e-3)
-    x_tol = min(x_tol, x_tol_)
+    x_tol = ps * 1.0e-4
+    f_tol = x_tol / dt^2
+
+    log_impinfo("Bypassing given tolerance values.\nusing x_tol = $(x_tol) and f_tol = $(f_tol).")
 
     function clip(x; a=1.0)
         max.(min.(x, a), -a)
@@ -46,7 +48,6 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
         clip(v; a=ps/10/dt)
     end
 
-    println("Bypassing given tolerance values.\nusing x_tol = $(x_tol) and f_tol = $(f_tol).")
 
     mask = false
     for bc in env.boundary_conditions
@@ -56,21 +57,18 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
     end
 
     mask = .!(mask)
+    opt = zero(env.f[:, mask])
+    k = lambda / 10
 
-    opt = similar(env.f[:, mask])
-
-    k = lambda/10
-
-    function apply_!(opt, f)
-        force = f .- lambda * opt .* (1.0 .+ k*abs.(opt))
-        Δy = opt * step_size .+ 0.5*force*step_size^2
+    function apply_!(opt, f, step_size)
+        force = f .- lambda * opt .* (1.0 .+ k * abs.(opt))
+        Δy = 0.5 * force * step_size^2 .+ opt * step_size
         opt .+= step_size .* force
-        Δy = clipx(Δy)
-        opt = clipv(opt)
+        Δy, opt = clipx(Δy), clipv(opt)
         return Δy
     end
 
-
+    log_info("Minimizing...")
 
     # function obj_fn(y)
     #     env.y[:, mask] .= y
@@ -78,23 +76,46 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
     #     sum(env.f[:, mask].^2)
     # end
 
-    println("Minimizing...")
+    # function grad_fn!(opt, y)
+    #     env.y[:, mask] .= y
+    #     update_acc!(env)
+    #     opt .= env.f[:, mask]
+    # end
 
-    # optimize(obj_fn, env.y[:, mask], LBFGS())
+    # function fg!(F, G, y)
+    #     env.y[:, mask] .= y
+    #     update_acc!(env)
+    #     if G != nothing
+    #         G .= env.f[:, mask]
+    #     end
+    #     if F != nothing
+    #         # value = ... code to compute objective function
+    #         return sum(env.f[:, mask].^2)
+    #     end
+    # end
 
+    # result = optimize(Optim.only_fg!(fg!), env.y[:, mask], GradientDescent(),
+    #                 Optim.Options(g_tol = f_tol,
+    #                 iterations = max_iter,
+    #                 store_trace = false,
+    #                 show_trace = true,
+    #                 show_every = 1)
+    #                 )
+
+    # env.y[:, mask] .= Optim.minimizer(result)
+
+    gs = @view env.f[:, mask]
+    f_tol_ = maximum(abs.(gs))
 
     iter = ProgressBar(1:max_iter)
-
     for i in iter
 
         update_acc!(env)
-
         gs = @view env.f[:, mask]
-        Δy = apply_!(opt, gs)
+        Δy = apply_!(opt, gs, step_size)
         env.y[:, mask] .+= Δy
 
-        f_tol_ = maximum(abs.(gs))
-        x_tol_ = maximum(abs.(Δy))
+        f_tol_, x_tol_ = maximum(abs.(gs)), maximum(abs.(Δy))
 
         # for bc in env.boundary_conditions
         #     if ~(bc.onlyatstart)
@@ -103,14 +124,14 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
         #     end
         # end
 
-        if ((f_tol_ < f_tol))  && i > 100 #|| (x_tol_ < x_tol) ) && i > 100
-            println("Tolerance reached, iter $i. x_tol $x_tol_ <= $x_tol or f_tol $f_tol_ <= $f_tol")
+        if ((f_tol_ < f_tol) && (x_tol_ < x_tol))  #&& i > 100 #|| (x_tol_ < x_tol) ) && i > 100
+            log_info("Tolerance reached, iter $i. x_tol $x_tol_ <= $x_tol or f_tol $f_tol_ <= $f_tol")
             break
         end
         if i==max_iter
-            println("Maximum iteration, iter $i ($max_iter) reached. x_tol $x_tol_ !<= $x_tol and f_tol $f_tol_ !<= $f_tol")
+            log_impinfo("Maximum iteration, iter $i ($max_iter) reached. x_tol $x_tol_ !<= $x_tol and f_tol $f_tol_ !<= $f_tol")
         end
-        set_postfix(iter, Steps=i, X_tol=round(x_tol_, digits=6), F_tol=round(f_tol_, digits=6), MaxF=round(maximum(env.f), digits=6))
+        set_postfix(iter, Iter=i, X_tol=round(x_tol_, digits=6), F_tol=round(f_tol_, digits=6), MaxF=round(maximum(env.f), digits=6))
     end
 
     for bc in env.boundary_conditions

@@ -112,7 +112,7 @@ function force_density_T(f_, y_, limits, mat::OrdinaryStateBasedMaterial, device
     end
 
 
-    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds; init=[0.0, 0.0, 0.0])
 
     # inner_map(i, inds) = mapreduce((j)-> with_if_cal_force_ij(i,j), +, inds)
     outer_map(ARGS) = map((x)->inner_map(x[1], x[2]), ARGS)

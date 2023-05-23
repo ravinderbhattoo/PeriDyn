@@ -1,5 +1,5 @@
 export TIMEIT_REF, CHECK_NAN, SPATIAL_DIMENSIONS_REF, MULTI_THREAD_REF
-export check_nan, timeit
+export check_nan, timeit, sinfo, swarning, sdetail, simpinfo, printsize, whatis
 export _magnitude, _ij
 export refresh, set_multi_threading
 
@@ -15,6 +15,58 @@ TIMEIT_REF = Ref(false)
 CHECK_NAN = Ref(true)
 MULTI_THREAD_REF = Ref(true)
 SPATIAL_DIMENSIONS_REF = Ref(3)
+LOGLEVEL=Ref(2)
+
+macro swarning(x)
+    if LOGLEVEL[] >= 1
+        quote
+            printstyled("WARNING: ", $(esc(x)), "\n"; color = :red)
+        end
+    else
+    end
+end
+
+log_warning(x) = @swarning(x)
+
+macro simpinfo(x)
+    if LOGLEVEL[] >= 2
+        quote
+            printstyled("INFO: ", $(esc(x)), "\n"; color = :yellow)
+        end
+    else
+    end
+end
+
+log_impinfo(x) = @simpinfo(x)
+
+macro sinfo(x)
+    if LOGLEVEL[] >= 3
+        quote
+            printstyled("INFO: ", $(esc(x)), "\n"; color = :green)
+        end
+    else
+    end
+end
+
+log_info(x) = @sinfo(x)
+
+macro sdetail(x)
+    if LOGLEVEL[] >= 4
+        quote
+            printstyled("INFO: ", $(esc(x)), "\n"; color = :green)
+        end
+    else
+    end
+end
+
+log_detail(x) = @sdetail(x)
+
+function set_loglevel(x::Int64)
+    LOGLEVEL[] = x
+    @simpinfo "Log level: $(LOGLEVEL[])"
+    refresh()
+end
+
 
 function set_multi_threading(x)
     MULTI_THREAD_REF[] = x
@@ -160,6 +212,10 @@ function refresh()
         begin
             PeriDyn.get_magnitude(a) = PeriDyn.@_magnitude(a)
             PeriDyn.get_ij(j, i, a) = PeriDyn.@_ij(j, i, a)
-            PeriDyn.map_reduce(f, op, iter) = PeriDyn.@map_reduce(f, op, iter)
+            PeriDyn.map_reduce(f, op, iter; init=0.0) = PeriDyn.@map_reduce(f, op, iter, init)
+            PeriDyn.log_detail(x) = PeriDyn.@sdetail(x)
+            PeriDyn.log_info(x) = PeriDyn.@sinfo(x)
+            PeriDyn.log_impinfo(x) = PeriDyn.@simpinfo(x)
+            PeriDyn.log_warning(x) = PeriDyn.@swarning(x)
         end)
 end

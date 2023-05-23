@@ -85,7 +85,7 @@ function force_density_T(f, y::AbstractArray{Float64,2}, limits, mat::BondBasedM
         end
     end
 
-    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds)
+    inner_map(i, inds) = map_reduce((j)-> with_if_cal_force_ij(i,j), +, inds; init=[0.0, 0.0, 0.0])
 
     # for x in ARGS
     #     i, inds = x
