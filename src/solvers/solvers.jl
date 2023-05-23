@@ -19,9 +19,9 @@ end
 """
 function simulate!(args...; out_dir="datafile", append_date=true, kwargs...)
     solver = last(args)
-    println("Using solver: $(solver)")
+    log_info("Using solver: $(solver)")
     foldername = filepath_(out_dir; append_date=append_date)
-    println("Output folder: $foldername")
+    log_info("Output folder: $foldername")
     return run!(args...; kwargs..., out_dir=foldername)
 end
 
@@ -64,7 +64,7 @@ function run!(envs, N::Int64, solver; filewrite_freq::Int64=10,
                     envs[id].Collect!(envs[id], i)
                 end
             else
-                println("Env $id is not active. step = $i")
+                log_impinfo("Env $id is not active. step = $i")
             end
         end
 
@@ -88,7 +88,7 @@ function run!(envs, N::Int64, solver; filewrite_freq::Int64=10,
 
         percentage = i/N*100
         if percentage%5==0
-            println("Status: ", round(percentage, digits=3), "%")
+            log_impinfo("Status: $(round(percentage, digits=3))% completed. step = $i")
         end
     end
 end
@@ -177,7 +177,7 @@ function update_acc!(env::GeneralEnv)
     # ̈ρu(xᵢ, t) = [∑ᵏⱼ₌₁ {T[xᵢ, t]<xⱼ-xᵢ> - T[xⱼ, t]<xᵢ-xⱼ> }*Vⱼ + b(xᵢ, t)]
     # for each block (type)
     for mat in env.material_blocks
-
+        log_detail("Force calculation for Material block $(mat.name).")
         mask = env.bid .== mat.blockid
         limits = (argmax(mask), length(mask) + 1 - argmax(reverse(mask)))
         force_density(env.f, env.y, limits, mat)
@@ -229,7 +229,7 @@ end
 Updates neighbors of each material point for a list of simulation environments.
 """
 function update_neighs!(envs; max_part=30)
-    println("Updating neighbors for collision ...")
+    log_info("Updating neighbors for collision ...")
     for env in envs
         if env.state[1]==2
             for RM in env.short_range_repulsion
@@ -245,7 +245,7 @@ end
 Writes data file to disk.
 """
 function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i; ext::Symbol=:jld)
-    println("Writting data file ($i) ...")
+    log_info("Writting data file ($i) ...")
     for id in 1:size(envs,1)
         env = envs[id]
         filename = string(file_prefix,"/env_",env.id,"_step_",i,".$(String(ext))")

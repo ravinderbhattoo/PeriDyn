@@ -84,7 +84,7 @@ General peridynamics material type.
 function GeneralMaterial(y0, v0, x, volume, type, horizon; max_neigh=100, particle_size=0, skip_bb=false)
     family = cal_family(x, horizon, max_neigh)
     intact = family .> 0
-    println("Average family members: ", sum(intact)/size(intact, 2))
+    log_info("Average family members: $(sum(intact)/size(intact, 2))")
     k = (size(intact,1)-maximum(sum(intact,dims=1)))::Int64
     intact = intact[k:end,:]
     family = family[k:end,:]
@@ -142,7 +142,7 @@ function force_density(f, y, limits, mat::PeridynamicsMaterial)
         y_ = Array(y[:, mask])
         x = Array(mat.general.x)
         if isapprox(y_ .- y_[:, 1] .+ x[:, 1], x)
-            println("Material force calculation passed ($(mat.name)). [Undeformed]")
+            log_info("Material force calculation passed ($(mat.name)). [Undeformed]")
         else
             mat.general.deformed .= true
             force_density_T(f, y, limits, mat, device)

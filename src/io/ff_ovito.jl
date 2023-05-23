@@ -8,7 +8,7 @@ It writes the data file.
 function jld2ovito(file, N; start=0, step=100)
     for i in start:step:N
         x = replace(file, "*"=>"$i")
-        println(x)
+        log_info("$(x)")
         out = jldread(x)
         write_ovito(x*".data"; out...)
     end
@@ -23,7 +23,7 @@ function jld2array(file, N; start=0, step=100)
     out = []
     for i in start:step:N
         x = replace(file, "*"=>"$i")
-        println(x)
+        log_info("$(x)")
         push!(out, jldread(x))
     end
     return out

@@ -5,6 +5,8 @@ This module contains NonLinear replusive model definitions.
 export NonLinearRepulsionModel, NonLinearRepulsionModel11, NonLinearRepulsionModel12, repulsion_force
 
 
+"""
+"""
 struct NonLinearRepulsionModel12<:RepulsionModel12
     pair::Vector{UnitRange{Int64}}
     exponent::Float64
@@ -31,10 +33,10 @@ end
 
 NonLinear repulsive model for 1-2 material blocks.
 """
-function NonLinearRepulsionModel(exponent,stifness, mat1::PeridynamicsMaterial,mat2::PeridynamicsMaterial;distanceX=5,max_neighs=50)
+function NonLinearRepulsionModel(exponent,stifness, mat1::PeridynamicsMaterial,mat2::PeridynamicsMaterial;distanceD=1.0,distanceX=3.0,max_neighs=50)
     p_size = (mat1.general.particle_size+mat2.general.particle_size)/2
     neighs = zeros(min(max_neighs,size(mat2.general.x,2)), size(mat1.general.x,2))
-    NonLinearRepulsionModel12([mat1.type,mat2.type],exponent,stifness,p_size,neighs,p_size*distanceX,min(max_neighs,size(mat2.general.x,2)))
+    NonLinearRepulsionModel12([mat1.type,mat2.type],exponent,stifness,p_size*distanceD,neighs,p_size*distanceX,min(max_neighs,size(mat2.general.x,2)))
 end
 
 """
