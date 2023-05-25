@@ -1,30 +1,78 @@
 export force_density_T, BondBasedMaterial, BondBasedSpecific, PeridynamicsMaterial
 
 """
-Specific bond based material type.
+    BondBasedSpecific
+
+Bond based specific material type.
+
+# Fields
+- `bond_stiffness::AbstractArray{T,2}`: Bond stiffness matrix.
+- `bulk_modulus::AbstractArray{T,2}`: Bulk modulus matrix.
+- `critical_stretch::AbstractArray{T,2}`: Critical stretch matrix.
+- `density::AbstractArray{T,1}`: Density vector.
+- `func::Function`: Bond force function.
+
+# Constructor
+```
+BondBasedSpecific(K::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; horizon=nothing, func=nothing)
+BondBasedSpecific(K::Real, critical_stretch::Real, density::Real; kwargs...)
+```
 """
 struct BondBasedSpecific{T <: AbstractFloat} <: SpecificMaterial
     bond_stiffness::AbstractArray{T,2}
+    bulk_modulus::AbstractArray{T,2}
     critical_stretch::AbstractArray{T,2}
     density::AbstractArray{T,1}
     func::Function
 end
 
+"""
+    BondBasedSpecific(K::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; horizon=nothing, func=nothing)
 
-function BondBasedSpecific(bond_stiffness::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; func=nothing)
+Constructs `BondBasedSpecific` material type.
+
+# Arguments
+- `K::AbstractArray`: Bulk modulus matrix.
+- `critical_stretch::AbstractArray`: Critical stretch matrix.
+- `density::AbstractArray`: Density vector.
+- `horizon::Real`: Horizon.
+- `func::Function`: Bond force function.
+
+# Returns
+- `BondBasedSpecific`: Bond based specific material type.
+"""
+function BondBasedSpecific(K::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; horizon=nothing, func=nothing)
     if isa(func, Nothing)
         func = bond_force
     end
-    BondBasedSpecific(make_matrix(bond_stiffness), make_matrix(critical_stretch), density, func)
+    if isa(horizon, Nothing)
+        bond_stiffness = 0*K
+        log_impinfo("Bond stiffness of K is used instead of 18K/πδ⁴. Please specify horizon.")
+    else
+        bond_stiffness = 18 * K ./ pi ./ horizon^4
+        log_impinfo("Bond stiffness of 18K/πδ⁴ is used.")
+    end
+    BondBasedSpecific(make_matrix(bond_stiffness), make_matrix(K), make_matrix(critical_stretch), density, func)
 end
 
-function BondBasedSpecific(bond_stiffness::Real, critical_stretch::Real, density::Real; kwargs...)
-    BondBasedSpecific([bond_stiffness], [critical_stretch], [density]; kwargs...)
+function BondBasedSpecific(K::Real, critical_stretch::Real, density::Real; kwargs...)
+    BondBasedSpecific([K], [critical_stretch], [density]; kwargs...)
 end
+
+
+function init(spc::BondBasedSpecific, gen::GeneralMaterial)
+    horizon = gen.horizon
+    BondBasedSpecific(spc.bulk_modulus, spc.critical_stretch, spc.density;
+                        horizon=horizon, func=spc.func)
+end
+
 
 struct BondBasedMaterial <: PeridynamicsMaterial
     @PeridynamicsMaterial_gf
     specific::BondBasedSpecific
+    function BondBasedMaterial(name, type, bid, gen, spc)
+        new(name, type, bid, gen, init(spc, gen))
+    end
 end
 
 function PeridynamicsMaterial(name, type, bid, gen, spc::BondBasedSpecific)
@@ -41,7 +89,7 @@ function force_density_T(f, y::AbstractArray{Float64,2}, limits, mat::BondBasedM
     force_density_T(f, y, limits, mat, :cpu; kwargs)
 end
 
-function out_of_loop!(y_, mat::BondBasedMaterial, device)
+@inline function out_of_loop!(y_, mat::BondBasedMaterial, device)
     nothing
 end
 
@@ -56,11 +104,13 @@ end
 
 
 """
-    force_density_T(mat::BondBasedMaterial)
+    force_density_T(force::AbstractArray{Float64,2}, y::AbstractArray{Float64,2}, limits, mat::BondBasedMaterial, ::Type{Val{:cuda}}; particles=nothing)
 
 Calculates force density (actually acceleration) for bond based material type.
 """
-function force_density_T(force::AbstractArray{Float64,2}, y::AbstractArray{Float64,2}, limits, mat::BondBasedMaterial, ::Type{Val{:cuda}}; particles=nothing)
+function force_density_T(force::AbstractArray{Float64,2}, y::AbstractArray{Float64,2},
+                            limits, mat::BondBasedMaterial, ::Type{Val{:cuda}};
+                            particles=nothing)
 
     force = CUDA.CuArray(zeros(eltype(y), size(y)))
     y = CUDA.CuArray(y)

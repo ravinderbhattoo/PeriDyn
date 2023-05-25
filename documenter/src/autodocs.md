@@ -1,3 +1,3 @@
 ```@autodocs
-Modules = [PeriDyn, PDMesh]
+Modules = [PeriDyn]
 ```

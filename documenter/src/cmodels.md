@@ -2,29 +2,32 @@
 
 ```@docs
 RepulsionModel11
-RepulsionModel11_gf
-RepulsionModel11_gcal
 RepulsionModel12
-RepulsionModel12_gf
-RepulsionModel12_gcal
+```
 
-LJRepulsionModel
-LJRepulsionModel11
-LJRepulsionModel12
-
-ShortRangeRepulsionModel
-ShortRangeRepulsionModel11 
-ShortRangeRepulsionModel12
-
+### Simple Spring Models
+```@docs
 NonLinearRepulsionModel
-NonLinearRepulsionModel11
-NonLinearRepulsionModel12
-
 LinearRepulsionModel
+```
 
+### LJ Models
+```@docs
+LJRepulsionModel
+```
+
+### Functions for Repulsion Models
+```@docs
 repulsion_force
-
-short_range_repulsion! 
+short_range_repulsion!
 collision_box
 update_repulsive_neighs!
+RepulsionModel11_gcal
+RepulsionModel12_gcal
+```
+
+### Macros for generating common fields of Repulsion Models
+```@docs
+RepulsionModel11_gf
+RepulsionModel12_gf
 ```

@@ -1,7 +1,7 @@
 push!(LOAD_PATH,"../src/")
 
-using Documenter #DocThemeIndigo
-using PeriDyn, PDMesh
+using Documenter #, DocThemeIndigo
+using PeriDyn, PDMaterialPoints
 using Dates
 
 # indigo = DocThemeIndigo.install(PeriDyn)
@@ -14,16 +14,17 @@ makedocs(sitename="PeriDyn",
             assets=["indigo.css"]
             ),
         # format = Documenter.LaTeX(),
-        modules=[PeriDyn, PDMesh],
+        modules=[PeriDyn],
         pages = [
             "Home" => "index.md",
             "Table of contents" => "toc.md",
-            "Material models" => "mmodels.md",
+            # "Material models" => "mmodels.md",
             "Contact models" => "cmodels.md",
-            "Solvers" => "solvers.md",
-            "Boundary Conditions" => "bc.md",
-            "Operator and Utility" => "operatorandutil.md",
+            # "Solvers" => "solvers.md",
+            # "Boundary Conditions" => "bc.md",
+            # "Operator and Utility" => "operatorandutil.md",
             "Examples" => "examples.md",
+            "Material Geometry" => "materialgeometry.md",
             "Index" => "list.md",
             "Autodocs" => "autodocs.md"
         ]

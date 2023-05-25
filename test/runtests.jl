@@ -1,4 +1,4 @@
-using Test, SafeTestsets, PeriDyn, PDMesh
+using Test, SafeTestsets, PeriDyn, PDMaterialPoints
 
 PD = PeriDyn
 

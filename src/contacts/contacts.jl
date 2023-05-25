@@ -1,21 +1,24 @@
+"""
+This module contains functions for calculating the repulsive forces between material points.
+"""
+
+export RepulsionModel11, RepulsionModel12
+# RepulsionModel11_gcal, RepulsionModel12_gcal, short_range_repulsion!, collision_box, update_repulsive_neighs!, _cudaconvert
+
+"""
+    RepulsionModel11
+
+Abstract type for repulsion model for a single material type.
+"""
 abstract type RepulsionModel11 end
+
+
+"""
+    RepulsionModel12
+
+Abstract type for repulsion model for two material types.
+"""
 abstract type RepulsionModel12 end
-
-function _cudaconvert(x::Vector{T}) where T <: Union{RepulsionModel11,RepulsionModel12}
-    _cudaconvert.(x)
-end
-
-function _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
-    function fn(x, k)
-        if k!=:material
-            return _cudaconvert(getfield(x, k))
-        else
-            return getfield(x, k)
-        end
-    end
-    T((fn(x, k) for k in fieldnames(T))...)
-end
-
 
 @def RepulsionModel_gf begin
     equi_dist::Float64
@@ -37,6 +40,19 @@ end
     material::GeneralMaterial
 end
 
+"""
+    RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
+
+Calculate the parameters for `RepulsionModel12` based on the input materials, distance, and maximum neighbors.
+
+Arguments:
+- `mat1`: The first material (type `RepulsionModel11`).
+- `mat2`: The second material (type `RepulsionModel11`).
+- `distanceX`: The distance factor.
+- `max_neighs`: The maximum number of neighbors.
+
+Returns a tuple containing the calculated parameters for `RepulsionModel12`.
+"""
 function RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
     equi_dist = (mat1.general.particle_size + mat2.general.particle_size) / 2
     distance = distanceX * equi_dist
@@ -48,6 +64,18 @@ function RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
     return (equi_dist, distance, horizons, hor, neighs, max_neighs, pair)
 end
 
+"""
+    RepulsionModel11_gcal(mat1, distanceX, max_neighs)
+
+Calculate the parameters for `RepulsionModel11` based on the input material, distance, and maximum neighbors.
+
+Arguments:
+- `mat1`: The material (type `RepulsionModel11`).
+- `distanceX`: The distance factor.
+- `max_neighs`: The maximum number of neighbors.
+
+Returns a tuple containing the calculated parameters for `RepulsionModel11`.
+"""
 function RepulsionModel11_gcal(mat1, distanceX, max_neighs)
     equi_dist = mat1.general.particle_size
     distance = distanceX * equi_dist
@@ -62,6 +90,13 @@ end
 
 
 function Base.show(io::IO, i::Union{RepulsionModel11, RepulsionModel12})
+    """
+    Print the details of a RepulsionModel object.
+
+    # Arguments
+    - `io::IO`: The output IO stream.
+    - `i::Union{RepulsionModel11, RepulsionModel12}`: The RepulsionModel object to print.
+    """
     println(io, typeof(i))
     for j in fieldnames(typeof(i))
         if j in [:neighs]
@@ -75,27 +110,18 @@ export short_range_repulsion!, collision_box, update_repulsive_neighs!
 
 
 """
-    short_range_repulsion!(y,f,type,RepusionModel)
+    short_range_repulsion!(y, f, type, RepulsionModel)
 
 Updates (inplace) the repulsive acceleration of material points.
 
-``α``
+## Arguments
+- `y`: Positions of material points.
+- `f`: Acceleration of material points.
+- `type`: Type of material points.
+- `RepulsionModel`: Repulsion model (see contacts.jl for more details).
 
-**`1-1 repulsion`**
-
-# Input Args:
-- `y :: Positions of material point`
-- `f :: Acceleration of material points`
-- `type :: Type of material points`
-- `RepulsionModel :: Repulsion model (see contacts.jl for more details)`
-
-# Output Args:
-- `Noting (Inplace updation of f (acceleration))`
-
-# Examples
-```jldoctest
-julia> short_range_repulsion!(y,f,type,RepusionModel)
-```
+## Output
+- None (Inplace update of f (acceleration)).
 """
 function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel12)
     mask1 = false
@@ -130,16 +156,45 @@ function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel12)
 end
 
 
+"""
+    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11)
 
+Updates (inplace) the repulsive acceleration of material points.
+
+# Arguments
+- `y`: Positions of material points
+- `f`: Acceleration of material points
+- `type`: Type of material points
+- `bid`: BID values
+- `vol`: Volume values
+- `RM::RepulsionModel11`: Repulsion model
+
+# Output
+- No return value. The function updates `f` in place.
+
+"""
 function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11)
     device = DEVICE[]
     short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, Val{device})
 end
 
 """
-    short_range_repulsion!(y,f,type,RepusionModel)
+    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cuda}})
 
 Updates (inplace) the repulsive acceleration of material points.
+
+# Arguments
+- `y`: Positions of material points
+- `f`: Acceleration of material points
+- `type`: Type of material points
+- `bid`: BID values
+- `vol`: Volume values
+- `RM::RepulsionModel11`: Repulsion model
+- `device::Type{Val{:cuda}}`: Device type for CUDA acceleration
+
+# Output
+- No return value. The function updates `f` in place.
+
 """
 function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cuda}})
     force_fn = get_repulsion_force_fn(RM)
@@ -191,9 +246,22 @@ end
 
 
 """
-    short_range_repulsion!(y,f,type,RepusionModel)
+    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cpu}})
 
 Updates (inplace) the repulsive acceleration of material points.
+
+# Arguments
+- `y`: Positions of material points
+- `f`: Acceleration of material points
+- `type`: Type of material points
+- `bid`: BID values
+- `vol`: Volume values
+- `RM::RepulsionModel11`: Repulsion model
+- `device::Type{Val{:cpu}}`: Device type for CPU acceleration
+
+# Output
+- No return value. The function updates `f` in place.
+
 """
 function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cpu}})
     mask1 = bid .== RM.bid
@@ -219,22 +287,18 @@ end
 """
     collision_box(x1::Array{Float64,2}, x2::Array{Float64,2}, skin::Float64)
 
-Calculates collsion box between two material blocks.
+Calculates collision box between two material blocks.
 
-# Input Args:
-- `x1 :: Positions of material point (block 1)`
-- `x2 :: Positions of material point (block 2)`
-- `skin :: Extra distance need to consider (usually >= particle size)`
+# Arguments
+- `x1`: Positions of material points (block 1)
+- `x2`: Positions of material points (block 2)
+- `skin`: Extra distance to consider (usually >= particle size)
 
-# Output Args:
-- `box_min :: Minimum position limits for overlap`
-- `box_max :: Miximum position limits for overlap`
-- `ifoverlap :: Boolean (true if overlap)`
+# Output
+- `box_min`: Minimum position limits for overlap
+- `box_max`: Maximum position limits for overlap
+- `ifoverlap`: Boolean indicating if there is an overlap
 
-# Examples
-```jldoctest
-julia> collision_box(x1, x2, skin)
-```
 """
 function collision_box(x1::AbstractArray, x2::AbstractArray, skin::Float64)
     min1 = minimum(x1,dims=2).-skin
@@ -253,9 +317,18 @@ end
 
 
 """
-    update_repulsive_neighs!(y,type,RepulsionModel12)
+    update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothing)
 
-Update neighbour list for repulsive force calculation (1-2 interaction).
+Update neighbor list for repulsive force calculation (1-2 interaction).
+
+# Arguments
+- `y`: Positions of material points
+- `type`: Type of material points
+- `RM::RepulsionModel12`: Repulsion model
+- `max_part=nothing`: Maximum number of particles (optional)
+
+# Output
+- No return value. The function updates `RM.neighs` in place.
 
 """
 function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothing)
@@ -302,17 +375,67 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothin
     log_info("Done")
 end
 
+
+"""
+    update_repulsive_neighs!(y, type, RM::RepulsionModel11; kwargs...)
+
+Update neighbor list for repulsive force calculation (1-1 interaction).
+
+# Arguments
+- `y`: Positions of material points
+- `type`: Type of material points
+- `RM::RepulsionModel11`: Repulsion model
+- `kwargs...`: Additional keyword arguments
+
+# Output
+- No return value. The function updates `RM.neighs` in place.
+
+"""
 function update_repulsive_neighs!(y, type, RM::RepulsionModel11; kwargs...)
     device = DEVICE[]
     update_repulsive_neighs!(y, type, RM::RepulsionModel11, device; kwargs...)
 end
 
+
+"""
+    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Symbol; kwargs...)
+
+Update neighbor list for repulsive force calculation (1-1 interaction) on a specific device.
+
+# Arguments
+- `y`: Positions of material points
+- `type`: Type of material points
+- `RM::RepulsionModel11`: Repulsion model
+- `device::Symbol`: Device type for acceleration
+- `kwargs...`: Additional keyword arguments
+
+# Output
+- No return value. The function updates `RM.neighs` in place.
+
+"""
 function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Symbol; kwargs...)
     update_repulsive_neighs!(y, type, RM::RepulsionModel11, Val{device}; kwargs...)
 end
 
 
+"""
+    update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
 
+Update the neighbor list for repulsive force calculation.
+
+# Arguments
+- `neighbors`: Array storing the neighbor indices
+- `x`: Positions of material points
+- `search_distance`: Maximum search distance for neighbors
+- `equi_dist`: Equilibrium distance for repulsion
+- `family`: Array indicating the family relationship between material points
+- `intact`: Array indicating if the family relationship is intact
+- `max_part`: Maximum number of particles in a cell
+
+# Output
+- No return value. The function updates the `neighbors` array in place.
+
+"""
 function update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
     cells, cell_neighs = get_cells(x, search_distance; max_part=max_part)
     Threads.@threads for cell_i in 1:length(cells)
@@ -352,9 +475,19 @@ function update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, fami
 end
 
 """
-    update_repulsive_neighs!(y,type,RepulsionModel11)
+    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cpu}}; max_part=30)
 
-Update neighbour list for repulsive force calculation (1-1 interaction).
+Update the neighbor list for repulsive force calculation (1-1 interaction).
+
+# Arguments
+- `y`: Positions of material points
+- `type`: Type of material points
+- `RM::RepulsionModel11`: Repulsion model for 1-1 interaction
+- `device::Type{Val{:cpu}}`: Device type (CPU)
+- `max_part=30`: Maximum number of particles in a cell
+
+# Output
+- No return value. The function updates the neighbor list in the `RM` object.
 
 """
 function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cpu}}; max_part=30)
@@ -373,9 +506,19 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Va
 end
 
 """
-    update_repulsive_neighs!(y,type,RepulsionModel11)
+    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cuda}}; max_part=30)
 
-Update neighbour list for repulsive force calculation (1-1 interaction).
+Update neighbor list for repulsive force calculation (1-1 interaction).
+
+# Arguments
+- `y`: Positions of material points
+- `type`: Type of material points
+- `RM::RepulsionModel11`: Repulsion model for 1-1 interaction
+- `device::Type{Val{:cuda}}`: Device type (CUDA)
+- `max_part=30`: Maximum number of particles in a cell
+
+# Output
+- No return value. The function updates the neighbor list in the `RM` object.
 
 """
 function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cuda}}; max_part=30)
@@ -394,6 +537,34 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Va
     RM.neighs .= CuArray(neighbors)
     nothing
 end
+
+
+"""
+    _cudaconvert(x::Vector{T}) where T <: Union{RepulsionModel11,RepulsionModel12}
+
+Converts a vector of `RepulsionModel11` or `RepulsionModel12` objects to CUDA-compatible types.
+"""
+function _cudaconvert(x::Vector{T}) where T <: Union{RepulsionModel11,RepulsionModel12}
+    _cudaconvert.(x)
+end
+
+
+"""
+    _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
+
+Converts a single `RepulsionModel11` or `RepulsionModel12` object to a CUDA-compatible type.
+"""
+function _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
+    function fn(x, k)
+        if k!=:material
+            return _cudaconvert(getfield(x, k))
+        else
+            return getfield(x, k)
+        end
+    end
+    T((fn(x, k) for k in fieldnames(T))...)
+end
+
 
 include("./LJ.jl")
 include("./shortrange.jl")

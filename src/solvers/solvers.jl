@@ -87,9 +87,12 @@ function run!(envs, N::Int64, solver; filewrite_freq::Int64=10,
         end
 
         percentage = i/N*100
-        if percentage%5==0
+        if percentage%1==0
             log_impinfo("Status: $(round(percentage, digits=3))% completed. step = $i")
         end
+
+        log_detail("Solver iteration : $i")
+
     end
 end
 

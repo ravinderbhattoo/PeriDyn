@@ -1,9 +1,17 @@
 export write_ovito, write_ovito_cell_ids, jld2ovito
 
 """
-    jld2ovito(file, N; step=100)
+    jld2ovito(file, N; start=0, step=100)
 
-It writes the data file.
+Converts JLD files to Ovito data files.
+
+Arguments:
+- `file`: String, the base name of the JLD files.
+- `N`: Int, the number of files to convert.
+- `start`: Int, the index of the first file to convert. Default is 0.
+- `step`: Int, the step size between files to convert. Default is 100.
+
+Note: This function iterates over a range of files and converts each JLD file to an Ovito data file using the `write_ovito` function.
 """
 function jld2ovito(file, N; start=0, step=100)
     for i in start:step:N
@@ -15,9 +23,20 @@ function jld2ovito(file, N; start=0, step=100)
 end
 
 """
-    jld2array(file, N; step=100)
+    jld2array(file, N; start=0, step=100)
 
-It loads the data file.
+Loads data from JLD files into an array.
+
+Arguments:
+- `file`: String, the base name of the JLD files.
+- `N`: Int, the number of files to load.
+- `start`: Int, the index of the first file to load. Default is 0.
+- `step`: Int, the step size between files to load. Default is 100.
+
+Returns:
+- Array, an array containing the data loaded from the JLD files.
+
+Note: This function iterates over a range of files and loads data from each JLD file using the `jldread` function.
 """
 function jld2array(file, N; start=0, step=100)
     out = []
@@ -31,9 +50,17 @@ end
 
 
 """
-    jldread(filename::String, args...)
+    jldread(filename::String)
 
-It reads the jld data file.
+Reads data from a JLD file.
+
+Arguments:
+- `filename`: String, the name of the JLD file to read.
+
+Returns:
+- Dict, a dictionary containing the data read from the JLD file.
+
+Note: This function uses the `load` function from the JLD package to read the data from the file, and converts it to a dictionary format.
 """
 function jldread(filename::String)
     inp = Dict()
@@ -48,7 +75,13 @@ end
 """
     write_ovito(filename::String; kwargs...)
 
-It writes the data file.
+Writes data to an Ovito data file.
+
+Arguments:
+- `filename`: String, the name of the file to write.
+- `kwargs`: Keyword arguments, the data to write to the file.
+
+Note: This function writes data in Ovito data file format, with each column specified by a keyword argument.
 """
 function write_ovito(filename::String; kwargs...)
     col_names = sort(collect(keys(kwargs)))
@@ -88,9 +121,16 @@ end
 
 
 """
-    write_ovito_cell_ids(filename::String, y::Array{Float64,2}, cells::Any)
+    write_ovito_cell_ids(filename::String, y::Matrix, horizon)
 
-It writes the data file.
+Writes cell IDs to an Ovito data file.
+
+Arguments:
+- `filename`: String, the name of the file to write.
+- `y`: Matrix, the coordinates of the particles.
+- `horizon`: The horizon value.
+
+Note: This function writes the cell IDs to an Ovito data file, based on the particle coordinates and horizon value.
 """
 function write_ovito_cell_ids(filename::String, y::Matrix, horizon)
     cells, _ = get_cells(y, horizon)

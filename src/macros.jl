@@ -31,7 +31,7 @@ log_warning(x) = @swarning(x)
 macro simpinfo(x)
     if LOGLEVEL[] >= 2
         quote
-            printstyled("INFO: ", $(esc(x)), "\n"; color = :yellow)
+            printstyled("INFO: ", $(esc(x)), "\n"; color = :yellow, bold = true)
         end
     else
     end
@@ -53,7 +53,7 @@ log_info(x) = @sinfo(x)
 macro sdetail(x)
     if LOGLEVEL[] >= 4
         quote
-            printstyled("INFO: ", $(esc(x)), "\n"; color = :green)
+            printstyled("INFO: ", $(esc(x)), "\n"; color = :blue)
         end
     else
     end

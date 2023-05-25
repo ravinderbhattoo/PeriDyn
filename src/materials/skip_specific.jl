@@ -53,5 +53,5 @@ function force_density_t_ij(mat::SkipMaterial, i, j, X, Y, xij, yij, extention, 
 end
 
 function force_density(f, y, limits, mat::SkipMaterial)
-    println("Material force calculation passed ($(mat.name)). [SkipSpecific]")
+    log_info("Material force calculation passed ($(mat.name)). [SkipSpecific]")
 end

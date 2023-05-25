@@ -1,8 +1,8 @@
-using PeriDyn, PDMesh
+using PeriDyn, PDMaterialPoints
 PD = PeriDyn
 
 function virgin_state_1D_2P(k)
-    x1, v1, y1, vol1, type1 = create(PDMesh.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
+    x1, v1, y1, vol1, type1 = create(PDMaterialPoints.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
     v1 = x1*0
     y1 = k*x1
 
@@ -32,7 +32,7 @@ function virgin_state_1D_2P(k)
 end
 
 function virgin_state(k)
-    x1, v1, y1, vol1, type1 = create(PDMesh.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
+    x1, v1, y1, vol1, type1 = create(PDMaterialPoints.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
     v1 = x1*0
     y1 = k*x1
 
@@ -51,7 +51,7 @@ function virgin_state(k)
     block1 = OrdinaryStateBasedMaterial(1:1,mat_gen1,mat_spec1)
 
 
-    x2, v2, y2, vol2, type2 = create(PDMesh.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
+    x2, v2, y2, vol2, type2 = create(PDMaterialPoints.Cuboid([0.0 2; 0.0 2; 0.0 2]), resolution=1)
     x2_ = 1x2
     x2[1,:] .+= 1.5
     y2 = k*y2

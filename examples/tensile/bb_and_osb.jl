@@ -2,10 +2,10 @@ using Pkg
 Pkg.activate(".")
 
 using PeriDyn
-using PDMesh
+using PDMaterialPoints
 
 PeriDyn.set_cuda(true)
-# PDMesh.set_cuda(true)
+# PDMaterialPoints.set_cuda(true)
 
 resolution = 0.5
 
