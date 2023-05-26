@@ -27,21 +27,21 @@ struct BondBasedSpecific{T <: AbstractFloat} <: SpecificMaterial
 end
 
 """
-    BondBasedSpecific(K::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; horizon=nothing, func=nothing)
+    BondBasedSpecific(K::Vector, critical_stretch::Vector, density::Vector; horizon=nothing, func=nothing)
 
 Constructs `BondBasedSpecific` material type.
 
 # Arguments
-- `K::AbstractArray`: Bulk modulus matrix.
-- `critical_stretch::AbstractArray`: Critical stretch matrix.
-- `density::AbstractArray`: Density vector.
+- `K::Vector`: Bulk modulus matrix.
+- `critical_stretch::Vector`: Critical stretch matrix.
+- `density::Vector`: Density vector.
 - `horizon::Real`: Horizon.
 - `func::Function`: Bond force function.
 
 # Returns
 - `BondBasedSpecific`: Bond based specific material type.
 """
-function BondBasedSpecific(K::AbstractArray, critical_stretch::AbstractArray, density::AbstractArray; horizon=nothing, func=nothing)
+function BondBasedSpecific(K::AbstractArray, critical_stretch::AbstractArray, density::Vector; horizon=nothing, func=nothing)
     if isa(func, Nothing)
         func = bond_force
     end

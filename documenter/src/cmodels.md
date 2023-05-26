@@ -5,6 +5,12 @@ RepulsionModel11
 RepulsionModel12
 ```
 
+### Short Range Repulsion Models
+```@docs
+ShortRangeRepulsionModel
+short_range_rm_definition
+```
+
 ### Simple Spring Models
 ```@docs
 NonLinearRepulsionModel
@@ -26,8 +32,3 @@ RepulsionModel11_gcal
 RepulsionModel12_gcal
 ```
 
-### Macros for generating common fields of Repulsion Models
-```@docs
-RepulsionModel11_gf
-RepulsionModel12_gf
-```

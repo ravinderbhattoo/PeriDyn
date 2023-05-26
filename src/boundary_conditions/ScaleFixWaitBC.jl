@@ -5,7 +5,17 @@ Module containing definitions for ScaleFixWaitBC boundary conditions.
 export ScaleFixWaitBC
 
 """
+    ScaleFixWaitBC
+
 Structure representing a ScaleFixWaitBC boundary condition.
+
+# Fields
+- `bool`: Boolean array specifying the affected elements.
+- `last`: Last position of the affected elements.
+- `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
+- `xF`: Function for updating the velocity.
+- `vF`: Function for updating the position.
+- `checkF`: Function for checking if the boundary condition needs to be applied.
 """
 struct ScaleFixWaitBC <: BoundaryCondition
     @general_bc_p
@@ -68,7 +78,7 @@ Check if the ScaleFixWaitBC boundary condition needs to be applied.
 - `BC`: Instance of ScaleFixWaitBC boundary condition.
 - `env`: Environment in which the condition is applied.
 """
-function check!(BC::ScaleFixWaitBC, env)
+function check!(env, BC::ScaleFixWaitBC)
     BC.checkF(env, BC)
 end
 

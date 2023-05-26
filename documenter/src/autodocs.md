@@ -1,3 +1,3 @@
-```@autodocs
+<!-- ```@autodocs
 Modules = [PeriDyn]
-```
+``` -->

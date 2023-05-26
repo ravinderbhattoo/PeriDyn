@@ -5,7 +5,16 @@ This module contains definitions for DeltaScaleBC of boundary conditions.
 export DeltaScaleBC
 
 """
+    DeltaScaleBC
+
 Struct representing the DeltaScaleBC boundary condition.
+
+# Fields
+- `bool`: Boolean array specifying the affected elements.
+- `last`: Last position of the affected elements.
+- `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
+- `xF`: Function for updating the velocity.
+- `vF`: Function for updating the position.
 """
 struct DeltaScaleBC <: BoundaryCondition
     @general_bc_p
@@ -65,6 +74,6 @@ Perform a check on the DeltaScaleBC boundary condition.
 - `BC`: The DeltaScaleBC boundary condition to check.
 - `env`: The environment associated with the boundary condition.
 """
-function check!(BC::DeltaScaleBC, env)
+function check!(env, BC::DeltaScaleBC)
     # pass
 end

@@ -31,7 +31,7 @@ function velocity_verlet_step!(env::GeneralEnv, solver::DSVelocityVerlet)
     end
 
     for bc in env.boundary_conditions
-        check!(bc, env)
+        check!(env, bc)
     end
 
     env.time_step += 1

@@ -3,7 +3,8 @@ This module contains functions for calculating the repulsive forces between mate
 """
 
 export RepulsionModel11, RepulsionModel12
-# RepulsionModel11_gcal, RepulsionModel12_gcal, short_range_repulsion!, collision_box, update_repulsive_neighs!, _cudaconvert
+export RepulsionModel11_gcal, RepulsionModel12_gcal
+export short_range_repulsion!, collision_box, update_repulsive_neighs!
 
 """
     RepulsionModel11
@@ -21,23 +22,33 @@ Abstract type for repulsion model for two material types.
 abstract type RepulsionModel12 end
 
 @def RepulsionModel_gf begin
+    name::String
     equi_dist::Float64
     distance::Float64
-    horizons::Tuple
-    hor::Float64
     neighs::AbstractArray{Int64,2}
     max_neighs::Int64
 end
 
 @def RepulsionModel12_gf begin
-    @RepulsionModel_gf
     pair::Vector{AbstractVector{Int64}}
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    @RepulsionModel_gf
 end
 
 @def RepulsionModel11_gf begin
-    @RepulsionModel_gf
     type::AbstractVector{Int64}
+    bid::Int64
     material::GeneralMaterial
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    @RepulsionModel_gf
 end
 
 """
@@ -53,15 +64,21 @@ Arguments:
 
 Returns a tuple containing the calculated parameters for `RepulsionModel12`.
 """
-function RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
-    equi_dist = (mat1.general.particle_size + mat2.general.particle_size) / 2
+function RepulsionModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
+    pair = [mat1.type, mat2.type]
+    name = "$(mat1.name)-$(mat2.name)"
+    equi_dist = (mat1.general.particle_size + mat2.general.particle_size) / 2 * distanceD
     distance = distanceX * equi_dist
-    horizons = (mat1.general.horizon, mat2.general.horizon)
-    hor = sum(horizons) / 2
     neighs = zeros(min(max_neighs,size(mat2.general.x,2)), size(mat1.general.x,2))
     max_neighs = min(max_neighs,size(mat2.general.x,2))
-    pair = [mat1.type,mat2.type]
-    return (equi_dist, distance, horizons, hor, neighs, max_neighs, pair)
+    # Order of arguments is important
+    # pair::Vector{AbstractVector{Int64}}
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    return pair, name, equi_dist, distance, neighs, max_neighs
 end
 
 """
@@ -76,16 +93,25 @@ Arguments:
 
 Returns a tuple containing the calculated parameters for `RepulsionModel11`.
 """
-function RepulsionModel11_gcal(mat1, distanceX, max_neighs)
-    equi_dist = mat1.general.particle_size
+function RepulsionModel11_gcal(mat1, distanceD, distanceX, max_neighs)
+    type = mat1.type
+    bid = mat1.blockid
+    material = mat1.general
+    name = "$(mat1.name)-$(mat1.name)"
+    equi_dist = mat1.general.particle_size * distanceD
     distance = distanceX * equi_dist
-    horizons = (mat1.general.horizon, )
-    hor = mat1.general.horizon
     neighs = zeros(max_neighs, size(mat1.general.x,2))
     max_neighs = min(max_neighs,size(mat1.general.x,2))
-    type = mat1.type
-    material = mat1.general
-    return (equi_dist, distance, horizons, hor, neighs, max_neighs, type, material)
+    # Order of arguments is important
+    # type::AbstractVector{Int64}
+    # bid::Int64
+    # material::GeneralMaterial
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    return type, bid, material, name, equi_dist, distance, neighs, max_neighs
 end
 
 
@@ -264,22 +290,22 @@ Updates (inplace) the repulsive acceleration of material points.
 
 """
 function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cpu}})
+    force_fn = get_repulsion_force_fn(RM)
     mask1 = bid .== RM.bid
-    f1 = f[:, mask1]
-    x1 = y[:, mask1]
-    vol1 = vol[mask1]
+    f1 = @view f[:, mask1]
+    x1 = @view y[:, mask1]
+    vol1 = @view vol[mask1]
     for i in 1:size(RM.neighs, 2)
-        for k in 1:size(RM.neighs, 1)
+        Threads.@threads for k in 1:size(RM.neighs, 1)
             j = RM.neighs[k,i]
-            if j>0
-                force = repulsion_force(x1[:, i] .- x2[:, j], RM)
-                f1[:,i] .+= force * vol2[j]
-                f2[:,j] .-=  force * vol1[i]
+            if j != 0
+                force = force_fn(x1[:, i] .- x1[:, j])
+                f1[:,i] .+= force * vol1[j]
+                f1[:,j] .-=  force * vol1[i]
             end
-            if j==0 break end
         end
     end
-    f[:, mask1] .= f1
+    # f[:, mask1] .= f1
     return nothing
 end
 
@@ -451,10 +477,10 @@ function update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, fami
                         ifbroken = true
                         # Check if family is intact
                         for k in size(family, 1):-1:1
-                            if family[k, ca]==0
-                                break
-                            else ((fa == family[k, ca]) && intact[k, ca]==1)
-                                ifbroken = false
+                            if (fa == family[k, ca])
+                                if intact[k, ca] == 1
+                                    ifbroken = false
+                                end
                                 break
                             end
                         end
@@ -498,7 +524,7 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Va
     x = y[:, mask]
     neighbors = RM.neighs
     search_distance = RM.distance
-    equi_dist = RM.material.particle_size
+    equi_dist = RM.equi_dist
     family = RM.material.family
     intact = RM.material.intact
     fill!(neighbors,0)

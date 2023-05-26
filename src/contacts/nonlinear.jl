@@ -8,34 +8,39 @@ export NonLinearRepulsionModel, NonLinearRepulsionModel12, NonLinearRepulsionMod
 
 
 """
-    NonLinearRepulsionModel12(pair::Vector{UnitRange{Int64}}, exponent::Float64, stifness::Float64, equi_dist::Float64, neighs::AbstractArray{Int64, 2}, distance::Float64, max_neighs::Int64)
+    NonLinearRepulsionModel12(exponent::Float64, stifness::Float64, pair::Vector{AbstractVector{Int64}}, name::String, equi_dist::Float64, distance::Float64, neighs::AbstractArray{Int64, 2}, max_neighs::Int64)
 
 Nonlinear repulsive model for 1-2 material blocks.
 """
 struct NonLinearRepulsionModel12<:RepulsionModel12
-    pair::Vector{UnitRange{Int64}}
     exponent::Float64
     stifness::Float64
-    equi_dist::Float64
-    neighs::AbstractArray{Int64,2}
-    distance::Float64
-    max_neighs::Int64
+    # pair::Vector{AbstractVector{Int64}}
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    @RepulsionModel12_gf
 end
 
 """
-    NonLinearRepulsionModel11(type::UnitRange{Int64}, bid::Int64, material::GeneralMaterial, exponent::Float64, stifness::Float64, neighs::AbstractArray{Int64, 2}, distance::Float64, max_neighs::Int64)
+    NonLinearRepulsionModel11(exponent::Float64, stifness::Float64, type::AbstractVector{Int64}, bid::Int64, material::GeneralMaterial, name::String, equi_dist::Float64, distance::Float64, neighs::AbstractArray{Int64, 2}, max_neighs::Int64)
 
 Nonlinear repulsive model for 1-1 material blocks.
 """
 struct NonLinearRepulsionModel11<:RepulsionModel11
-    type::UnitRange{Int64}
-    bid::Int64
-    material::GeneralMaterial
     exponent::Float64
     stifness::Float64
-    neighs::AbstractArray{Int64,2}
-    distance::Float64
-    max_neighs::Int64
+    # type::AbstractVector{Int64}
+    # bid::Int64
+    # material::GeneralMaterial
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    @RepulsionModel11_gf
 end
 
 """
@@ -55,10 +60,19 @@ Arguments:
 Returns:
 A NonLinearRepulsionModel12 object.
 """
-function NonLinearRepulsionModel(exponent,stifness, mat1::PeridynamicsMaterial,mat2::PeridynamicsMaterial;distanceD=1.0,distanceX=3.0,max_neighs=50)
-    p_size = (mat1.general.particle_size+mat2.general.particle_size)/2
-    neighs = zeros(min(max_neighs,size(mat2.general.x,2)), size(mat1.general.x,2))
-    NonLinearRepulsionModel12([mat1.type,mat2.type],exponent,stifness,p_size*distanceD,neighs,p_size*distanceX,min(max_neighs,size(mat2.general.x,2)))
+function NonLinearRepulsionModel(exponent, stifness,
+                    mat1::PeridynamicsMaterial,
+                    mat2::PeridynamicsMaterial;
+                    distanceD=1.0,
+                    distanceX=3.0,
+                    max_neighs=50
+                    )
+    # Order of arguments:
+    # exponent::Float64
+    # stifness::Float64
+    # generated using RepulsionModel12_gcal
+    args = RepulsionModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
+    NonLinearRepulsionModel12(exponent, stifness, args...)
 end
 
 """
@@ -76,10 +90,24 @@ Arguments:
 Returns:
 A NonLinearRepulsionModel11 object.
 """
-function NonLinearRepulsionModel(exponent,stifness, mat1::PeridynamicsMaterial; distanceX=5, max_neighs=50)
-    max_neighs = min(max_neighs,size(mat1.general.x,2))
-    neighs = zeros(max_neighs, size(mat1.general.x,2))
-    NonLinearRepulsionModel11(mat1.type,mat1.blockid,mat1.general,exponent,stifness,neighs, mat1.general.particle_size*distanceX,max_neighs)
+function NonLinearRepulsionModel(exponent, stifness,
+                                mat1::PeridynamicsMaterial;
+                                distanceD=1.0,
+                                distanceX=5,
+                                max_neighs=50)
+    # Order of arguments:
+    # exponent::Float64
+    # stifness::Float64
+    # type::AbstractVector{Int64}
+    # bid::Int64
+    # material::GeneralMaterial
+    # name::String
+    # equi_dist::Float64
+    # distance::Float64
+    # neighs::AbstractArray{Int64,2}
+    # max_neighs::Int64
+    args = RepulsionModel11_gcal(mat1, distanceD, distanceX, max_neighs)
+    NonLinearRepulsionModel11(exponent, stifness, args...)
 end
 
 """
@@ -94,7 +122,7 @@ Arguments:
 Returns:
 The repulsive acceleration as a vector.
 """
-function repulsion_force(dr,RepMod::NonLinearRepulsionModel12)
+function repulsion_force(dr, RepMod::NonLinearRepulsionModel12)
     mag_dr = get_magnitude(dr) + 1.0e-10
     del_x = RepMod.equi_dist - mag_dr
     strain = del_x / RepMod.equi_dist
@@ -120,8 +148,8 @@ The repulsive acceleration as a vector.
 """
 function repulsion_force(dr, RepMod::NonLinearRepulsionModel11)
     mag_dr = get_magnitude(dr) + 1.0e-10
-    del_x = RepMod.material.particle_size - mag_dr
-    strain = del_x / RepMod.material.particle_size
+    del_x = RepMod.equi_dist - mag_dr
+    strain = del_x / RepMod.equi_dist
     if del_x<0
         return zeros(size(dr)...)
     else
@@ -141,19 +169,19 @@ Returns:
 A repulsion force function that takes a distance vector and returns the repulsive acceleration.
 """
 function get_repulsion_force_fn(RepMod::NonLinearRepulsionModel11)
-    equi_size = RepMod.material.particle_size
+    equi_size = RepMod.equi_dist
     expo = RepMod.exponent
     K = RepMod.stifness
 
-    function fn(dr)
+    @inline function fn(dr)
         mag_dr = get_magnitude(dr) + 1.0e-10
         del_x = equi_size - mag_dr
         strain = del_x / equi_size
         if del_x < 0
-            return (0.0, 0.0, 0.0)
+            return [0.0, 0.0, 0.0]
         else
             s = ( K * strain^expo )  / mag_dr
-            return (s*dr[1], s*dr[2], s*dr[3])
+            return s * dr
         end
     end
     return fn

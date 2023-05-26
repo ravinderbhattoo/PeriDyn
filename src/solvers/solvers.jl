@@ -198,6 +198,7 @@ function update_acc!(env::GeneralEnv)
     ##################
     # calculate short range repulsion (should be force density * volume)
     for i in 1:size(env.short_range_repulsion, 1)
+        log_detail("Force calculation for Short range repulsion $(env.short_range_repulsion[i].name).")
         short_range_repulsion!(env.y, env.f, env.type, env.bid, env.volume, env.short_range_repulsion[i])
     end
 

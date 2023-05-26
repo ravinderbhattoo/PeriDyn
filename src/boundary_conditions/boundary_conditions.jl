@@ -2,17 +2,14 @@
 This module contains definitions for different types of boundary conditions.
 """
 
-export apply_bc!
+export BoundaryCondition, check!, apply_bc!, apply_bc_at0!
 
 """
-Abstract class for boundary conditions.
+    BoundaryCondition
+
+Abstract type for boundary conditions.
 """
 abstract type BoundaryCondition end
-
-"""
-Abstract class for boundary conditions that are applied at time 0.
-"""
-abstract type BoundaryConditionat0 end
 
 function _cudaconvert(x::Vector{T}) where T <: BoundaryCondition
     _cudaconvert.(x)
@@ -34,10 +31,38 @@ function Base.show(io::IO, i::BoundaryCondition)
     end
 end
 
-function check!(BC::T, env) where T <: BoundaryCondition
+"""
+    check!(env, BC::BoundaryCondition)
+
+Check if the boundary condition `BC` has changed and updates the `BC`. Used for dynamic boundary conditions.
+"""
+function check!(env, BC::T) where T <: BoundaryCondition
     # error("check! method Not implemented for $(T)")
+    log_detail("check! method not implemented for $(T)")
 end
 
+"""
+    apply_bc_at0!(env, BC::BoundaryCondition)
+
+Apply the boundary condition `BC` to the given environment `env` at the start of the simulation (t=0).
+"""
+function apply_bc_at0!(env, BC::T) where T <: BoundaryCondition
+    # error("check! method Not implemented for $(T)")
+    log_detail("apply_bc_at0! method not implemented for $(T)")
+end
+
+"""
+    general_bc_p()
+
+Macro for defining the common fields of a general boundary condition.
+
+The following fields are defined:
+- `bool`: Boolean array specifying the affected material points.
+- `last`: Array of the same type as the state vector specifying the last state of the affected material points.
+- `onlyatstart`: Flag indicating if the boundary condition is applied only at the start (default: `false`).
+- `xF`: Function for updating the velocity.
+- `vF`: Function for updating the position.
+"""
 @def general_bc_p begin
     bool::AbstractArray{T, 1} where T
     last::AbstractArray{T, 2} where T

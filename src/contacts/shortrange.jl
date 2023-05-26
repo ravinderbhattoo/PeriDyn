@@ -2,10 +2,10 @@
 This module contains ShortRange replusive model definitions.
 """
 
-export ShortRangeRepulsionModel, ShortRangeRepulsionModel11, ShortRangeRepulsionModel12, repulsion_force
+export ShortRangeRepulsionModel, ShortRangeRepulsionModel11, ShortRangeRepulsionModel12, repulsion_force, short_range_rm_force
 
 """
-    short_range_model_definition(spring_const, del_x, hor, dir)
+    short_range_rm_force(spring_const, del_x, hor, dir)
 
 Calculates the repulsive force using the ShortRange repulsion model formula.
 The formula is: 18 * spring_const / (hor^4 * pi) * (del_x / hor) .* dir
@@ -19,7 +19,7 @@ Arguments:
 Returns:
 - Vector{Float64}: The calculated repulsive force vector.
 """
-function short_range_model_definition(spring_const, del_x, hor, dir)
+function short_range_rm_force(spring_const, del_x, hor, dir)
     return 18 * spring_const / (hor^4 * pi) * (del_x / hor) .*  dir
 end
 
@@ -90,7 +90,7 @@ function repulsion_force(dr, RepMod::ShortRangeRepulsionModel12)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return short_range_model_definition(RepMod.spring_const, del_x, RepMod.hor, dr/mag_dr)
+        return short_range_rm_force(RepMod.spring_const, del_x, RepMod.hor, dr/mag_dr)
     end
 end
 
@@ -113,6 +113,6 @@ function repulsion_force(dr, RepMod::ShortRangeRepulsionModel11)
     if del_x<0
         return zeros(size(dr)...)
     else
-        return short_range_model_definition(RepMod.spring_const, del_x, RepMod.hor, dr/mag_dr)
+        return short_range_rm_force(RepMod.spring_const, del_x, RepMod.hor, dr/mag_dr)
     end
 end

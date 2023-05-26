@@ -5,7 +5,16 @@ This module contains definitions for FixBC boundary conditions.
 export FixBC
 
 """
+    FixBC
+
 Struct representing the FixBC boundary condition.
+
+# Fields
+- `bool`: Boolean array specifying the affected elements.
+- `last`: Last position of the affected elements.
+- `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
+- `xF`: Function for updating the velocity.
+- `vF`: Function for updating the position.
 """
 struct FixBC <: BoundaryCondition
     @general_bc_p

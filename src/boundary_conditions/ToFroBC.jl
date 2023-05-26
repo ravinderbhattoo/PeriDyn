@@ -5,7 +5,19 @@ This module contains definitions for ToFroBC and MoveBC of boundary conditions.
 export ToFroBC, MoveBC
 
 """
+    ToFroBC
+
 Struct representing the ToFroBC boundary condition.
+
+# Fields
+- `bool`: Boolean array specifying the affected elements.
+- `last`: Last position of the affected elements.
+- `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
+- `xF`: Function for updating the velocity.
+- `vF`: Function for updating the position.
+- `direction`: Direction of movement.
+- `freq`: Frequency at which the direction of movement changes.
+- `applyafter`: Number of steps after which the frequency is applied.
 """
 struct ToFroBC <: BoundaryCondition
     @general_bc_p
@@ -84,7 +96,7 @@ Perform a check on the ToFroBC boundary condition.
 - `BC`: The ToFroBC boundary condition to check.
 - `env`: The environment associated with the boundary condition.
 """
-function check!(BC::ToFroBC, env)
+function check!(env, BC::ToFroBC)
     if ( env.time_step > BC.applyafter ) & (env.time_step % BC.freq == 0)
         BC.direction[] = -1*BC.direction[]
     end

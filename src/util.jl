@@ -275,6 +275,33 @@ function make_matrix(S::Array{T,1}) where {T}
     return bs
 end
 
+function make_matrix(S::Matrix)
+    return S
+end
+
+"""
+    make_vector(M::Array{T,2})
+
+Create an array of upper triangle of an symmetrical NxN matrix.
+
+================
+## Returns
+    S :: Array
+"""
+function make_vector(bs::Array{T, 2}) where {T}
+    n = size(bs, 1)
+    N = Int64(n*(n+1)/2)
+    S = zeros(T, N)
+    a = 1
+    for i in 1:n
+        for j in i:n
+            S[a] = bs[i, j]
+            a += 1
+        end
+    end
+    return S
+end
+
 
 """
     make_matrix(S::Array{T,1})
