@@ -13,8 +13,8 @@ Struct representing the ToFroBC boundary condition.
 - `bool`: Boolean array specifying the affected elements.
 - `last`: Last position of the affected elements.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
-- `xF`: Function for updating the velocity.
-- `vF`: Function for updating the position.
+- `xF`: function for updating the position.
+- `vF`: function for updating the velocity.
 - `direction`: Direction of movement.
 - `freq`: Frequency at which the direction of movement changes.
 - `applyafter`: Number of steps after which the frequency is applied.

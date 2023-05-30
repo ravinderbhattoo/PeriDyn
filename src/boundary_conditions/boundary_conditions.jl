@@ -60,8 +60,8 @@ The following fields are defined:
 - `bool`: Boolean array specifying the affected material points.
 - `last`: Array of the same type as the state vector specifying the last state of the affected material points.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start (default: `false`).
-- `xF`: Function for updating the velocity.
-- `vF`: Function for updating the position.
+- `xF`: function for updating the position.
+- `vF`: function for updating the velocity.
 """
 @def general_bc_p begin
     bool::AbstractArray{T, 1} where T
@@ -121,5 +121,6 @@ include("./FixBC.jl")
 include("./ToFroBC.jl")
 include("./DeltaScaleBC.jl")
 include("./ScaleFixWaitBC.jl")
+include("./ContainerBC.jl")
 
 

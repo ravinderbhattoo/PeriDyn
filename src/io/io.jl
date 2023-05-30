@@ -5,7 +5,7 @@ export write_data
 
 Writes the data file.
 
-Arguments:
+# Arguments
 - `filename`: String, the name of the file to be written.
 - `kwargs`: Keyword arguments, additional options for writing the file.
 
@@ -30,7 +30,7 @@ end
 
 Writes the global data file.
 
-Arguments:
+# Arguments
 - `filename`: String, the name of the file to be written.
 - `kwargs`: Keyword arguments, additional options for writing the file.
 
@@ -50,11 +50,11 @@ end
 
 Loads data from a file into the specified environment.
 
-Arguments:
+# Arguments
 - `env`: GeneralEnv, the environment to load the data into.
 - `filename`: String, the name of the file to load data from.
 
-Returns:
+# Returns
 - Nothing
 
 Note: This function assumes the presence of specific data fields in the file, such as "position", "velocity", and "acceleration".

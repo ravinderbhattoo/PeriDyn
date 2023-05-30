@@ -592,10 +592,10 @@ function _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
 end
 
 
-include("./LJ.jl")
+include("./nonlinearspring.jl")
+include("./linearspring.jl")
 include("./shortrange.jl")
-include("./nonlinear.jl")
-include("./linear.jl")
+include("./LJ.jl")
 
 
 #

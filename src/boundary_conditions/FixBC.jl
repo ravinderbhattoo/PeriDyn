@@ -13,8 +13,8 @@ Struct representing the FixBC boundary condition.
 - `bool`: Boolean array specifying the affected elements.
 - `last`: Last position of the affected elements.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
-- `xF`: Function for updating the velocity.
-- `vF`: Function for updating the position.
+- `xF`: function for updating the position.
+- `vF`: function for updating the velocity.
 """
 struct FixBC <: BoundaryCondition
     @general_bc_p

@@ -1,17 +1,47 @@
 export velocity_verlet_step!, apply_solver!, DSVelocityVerlet
 
 
+"""
+    DSVelocityVerlet
+
+The velocity verlet algorithm.
+"""
 struct DSVelocityVerlet <: DynamicSolver
 end
 
+"""
+    apply_solver!(env, solver::DSVelocityVerlet)
+
+Apply the velocity verlet algorithm to the environment.
+
+# Arguments
+- `env`: GeneralEnv, the environment.
+- `solver`: DSVelocityVerlet, the velocity verlet algorithm.
+
+# Example
+```
+solver = DSVelocityVerlet()
+apply_solver!(env, solver)
+```
+"""
 function apply_solver!(env, solver::DSVelocityVerlet)
     velocity_verlet_step!(env, solver)
 end
 
 """
-velocity_verlet_step!(env::GeneralEnv)
+    velocity_verlet_step!(env, solver::DSVelocityVerlet)
 
-Implement a single step of velocity verlet algorithm.
+Apply one step of the velocity verlet algorithm to the environment.
+
+# Arguments
+- `env`: GeneralEnv, the environment.
+- `solver`: DSVelocityVerlet, the velocity verlet algorithm.
+
+# Example
+```
+solver = DSVelocityVerlet()
+velocity_verlet_step!(env, solver)
+```
 """
 function velocity_verlet_step!(env::GeneralEnv, solver::DSVelocityVerlet)
 

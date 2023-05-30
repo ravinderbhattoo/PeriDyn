@@ -1,8 +1,32 @@
-export save_state!, save_state_ovito_bc!, update_acc!, update_neighs!, run!, simulate!, Solver
+"""
+This module contains solver definitions.
+"""
 
-abstract type QuasiStaticSolver end
-abstract type DynamicSolver end
-Solver = Union{QuasiStaticSolver,DynamicSolver}
+export Solver, QuasiStaticSolver, DynamicSolver
+export simulate!, run!, update_acc!, update_neighs!
+export apply_bc_at0, check_boundaries!
+export filepath_, print_data_file!, save_state!, save_state_ovito_bc!
+
+"""
+    Solver
+
+Solver is an abstract type for solvers.
+"""
+abstract type Solver end
+
+"""
+    QuasiStaticSolver <: Solver
+
+QuasiStaticSolver is an abstract type for quasi-static solvers.
+"""
+abstract type QuasiStaticSolver <: Solver end
+
+"""
+    DynamicSolver <: Solver
+
+DynamicSolver is an abstract type for dynamic solvers.
+"""
+abstract type DynamicSolver <: Solver end
 
 function _cudaconvert(solver::Solver)
     solver
@@ -16,6 +40,12 @@ end
 
 
 """
+    simulate!(args...; out_dir="datafile", append_date=true, kwargs...)
+
+Simulate a list of environments. The last argument should be a solver. The `args` and
+`kwargs` are passed to `run!` function. The `out_dir` is the directory where the data
+files are saved. The `append_date` is a boolean value. If `true`, the date is appended
+to the `out_dir` path.
 """
 function simulate!(args...; out_dir="datafile", append_date=true, kwargs...)
     solver = last(args)
@@ -25,8 +55,35 @@ function simulate!(args...; out_dir="datafile", append_date=true, kwargs...)
     return run!(args...; kwargs..., out_dir=foldername)
 end
 
+"""
+    run!(envs, N::Int64, solver::Solver; filewrite_freq::Int64=10,
+        neigh_update_freq::Int64=1, average_prop_freq::Int64=1,
+        out_dir::String="datafile",
+        start_at::Int64=0, write_from::Int=0, ext::Symbol=:jld,
+        max_part=30)
 
-function run!(envs, N::Int64, solver; filewrite_freq::Int64=10,
+Run simulation for a list of environments.
+
+# Arguments
+- `envs`: Array{GeneralEnv}, the list of environments.
+- `N`: Int64, the number of steps.
+- `solver`: Solver, the solver.
+
+# Keyword Arguments
+- `filewrite_freq`: Int64, the frequency of writing data files to disk. Default is 10.
+- `neigh_update_freq`: Int64, the frequency of updating neighbors. Default is 1.
+- `average_prop_freq`: Int64, the frequency of calculating average properties. Default is 1.
+- `out_dir`: String, the directory where the data files are saved. Default is "datafile".
+- `start_at`: Int64, the starting step. Default is 0.
+- `write_from`: Int, the starting index of the data files. Default is 0.
+- `ext`: Symbol, the extension of the data files. Default is :jld.
+- `max_part`: Int, the maximum number of particles in a neighborhood. Default is 30.
+
+# See also
+- `simulate!`
+
+"""
+function run!(envs, N::Int64, solver::Solver; filewrite_freq::Int64=10,
                 neigh_update_freq::Int64=1, average_prop_freq::Int64=1,
                 out_dir::String="datafile",
                 start_at::Int64=0, write_from::Int=0, ext::Symbol=:jld,
@@ -97,6 +154,19 @@ function run!(envs, N::Int64, solver; filewrite_freq::Int64=10,
 end
 
 
+"""
+    filepath_(file_prefix::String; append_date=false)
+
+Returns the path to the output folder. If `append_date` is `true`, the date is appended.
+
+# Arguments
+- `file_prefix`: String, the prefix of the output folder.
+
+# Keyword Arguments
+- `append_date`: Bool, the boolean value to append date to the output folder. Default is
+`false`.
+
+"""
 function filepath_(file_prefix; append_date=false)
     if append_date
         dtime=replace(string(ceil(Dates.now(), Dates.Second(1))), ":"=>"-")
@@ -111,6 +181,13 @@ end
     save_state!(filename, env)
 
 Save `env::GeneralEnv` to disk.
+
+# Arguments
+- `filename`: String, the filename.
+- `env`: GeneralEnv, the simulation environment.
+
+# See also
+- `save_state_ovito_bc!`
 """
 function save_state!(filename, env)
     update_acc!(env)
@@ -126,7 +203,15 @@ end
 """
     save_state_ovito_bc!(filename, env)
 
-Save `env::GeneralEnv` to disk.
+Save `env::GeneralEnv` to disk for ovito visualization. The boundary conditions are saved
+as type.
+
+# Arguments
+- `filename`: String, the filename.
+- `env`: GeneralEnv, the simulation environment.
+
+# See also
+- `save_state!`
 """
 function save_state_ovito_bc!(filename, env)
     update_acc!(env)
@@ -151,6 +236,16 @@ function save_state_ovito_bc!(filename, env)
 end
 
 
+"""
+    apply_bc_at0!(env, start_at)
+
+Apply boundary conditions at t = t0.
+
+# Arguments
+- `env`: GeneralEnv, the simulation environment.
+- `start_at`: Int64, the starting step.
+
+"""
 function apply_bc_at0(env, start_at)
     if start_at==0
         for bc in env.boundary_conditions
@@ -164,10 +259,17 @@ end
 
 Updates acceleration of all the material points in a simulation environment.
 
-̈u(xᵢ, t) = from material forces + from contact forces
+̈u(xᵢ, t) = forces due to material deformation + forces due to contact
 
-from material force, ̈u(xᵢ, t) = [∑ᵏⱼ₌₁ {T[xᵢ, t]<xⱼ-xᵢ> - T[xⱼ, t]<xᵢ-xⱼ> }*Vⱼ + b(xᵢ, t)] / ρᵢ
+forces due to material deformation:
+    > ̈u(xᵢ, t) = [∑ᵏⱼ₌₁ {T[xᵢ, t]<xⱼ-xᵢ> - T[xⱼ, t]<xᵢ-xⱼ> }*Vⱼ + b(xᵢ, t)] / ρᵢ
 
+# Arguments
+- `env`: GeneralEnv, the simulation environment.
+
+# See also
+- `force_density`
+- `short_range_repulsion!`
 """
 function update_acc!(env::GeneralEnv)
     # fill force vector with zeros
@@ -231,6 +333,13 @@ end
     function update_neighs!(envs)
 
 Updates neighbors of each material point for a list of simulation environments.
+
+# Arguments
+- `envs`: Array{GeneralEnv}, the list of simulation environments.
+
+# See also
+- `update_repulsive_neighs!`
+
 """
 function update_neighs!(envs; max_part=30)
     log_info("Updating neighbors for collision ...")
@@ -246,7 +355,13 @@ end
 """
     print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i::Int64)
 
-Writes data file to disk.
+Prints data files to disk for a list of simulation environments.
+
+# Arguments
+- `envs`: Array{GeneralEnv}, the list of simulation environments.
+- `file_prefix`: String, the prefix of the output folder.
+- `i`: Int64, the step number.
+
 """
 function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i; ext::Symbol=:jld)
     log_info("Writting data file ($i) ...")
@@ -259,6 +374,16 @@ function print_data_file!(envs::Array{GeneralEnv}, file_prefix::String, i; ext::
     end
 end
 
+"""
+    check_boundaries!(env)
+
+Check if any material point is outside the boundaries. If so, set the type to -1 and
+velocity to zero.
+
+# Arguments
+- `env`: GeneralEnv, the simulation environment.
+
+"""
 function check_boundaries!(env)
     # _min, _max = env.boundaries
     # y = env.y

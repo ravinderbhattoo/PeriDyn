@@ -5,7 +5,7 @@ export write_ovito, write_ovito_cell_ids, jld2ovito
 
 Converts JLD files to Ovito data files.
 
-Arguments:
+# Arguments
 - `file`: String, the base name of the JLD files.
 - `N`: Int, the number of files to convert.
 - `start`: Int, the index of the first file to convert. Default is 0.
@@ -27,13 +27,13 @@ end
 
 Loads data from JLD files into an array.
 
-Arguments:
+# Arguments
 - `file`: String, the base name of the JLD files.
 - `N`: Int, the number of files to load.
 - `start`: Int, the index of the first file to load. Default is 0.
 - `step`: Int, the step size between files to load. Default is 100.
 
-Returns:
+# Returns
 - Array, an array containing the data loaded from the JLD files.
 
 Note: This function iterates over a range of files and loads data from each JLD file using the `jldread` function.
@@ -54,10 +54,10 @@ end
 
 Reads data from a JLD file.
 
-Arguments:
+# Arguments
 - `filename`: String, the name of the JLD file to read.
 
-Returns:
+# Returns
 - Dict, a dictionary containing the data read from the JLD file.
 
 Note: This function uses the `load` function from the JLD package to read the data from the file, and converts it to a dictionary format.
@@ -77,7 +77,7 @@ end
 
 Writes data to an Ovito data file.
 
-Arguments:
+# Arguments
 - `filename`: String, the name of the file to write.
 - `kwargs`: Keyword arguments, the data to write to the file.
 
@@ -125,7 +125,7 @@ end
 
 Writes cell IDs to an Ovito data file.
 
-Arguments:
+# Arguments
 - `filename`: String, the name of the file to write.
 - `y`: Matrix, the coordinates of the particles.
 - `horizon`: The horizon value.

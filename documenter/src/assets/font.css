@@ -1,0 +1,21 @@
+@font-face {
+  font-family: JuliaMono;
+  src: local("JuliaMono"), url("https://cdn.jsdelivr.net/gh/cormullion/juliamono/webfonts/JuliaMono-Regular.woff2"); }
+
+@import url('https://fonts.googleapis.com/css?family=Rokkitt&display=swap');
+
+body {
+    font-family: 'Rokkitt', sans-serif;
+    font-size: 1.1em;
+    line-height: 1.2em;
+  }
+
+
+html:not(.theme--documenter-dark) body #documenter pre, html:not(.theme--documenter-dark) body #documenter code {
+  color: inherit;
+  font-family: "JuliaMono"; }
+
+.tag.is-primary:not(body), .content kbd.is-primary:not(body), .docstring > section > a.docs-sourcelink:not(body) {
+  font-size: 1em !important;
+  }
+

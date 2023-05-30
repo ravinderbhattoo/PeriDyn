@@ -1,5 +1,27 @@
 export minimize!, apply_solver!, QSDrag
 
+"""
+    QSDrag
+
+Quasi-static solver struct.
+
+# Fields
+- `step_size`: Float64, the step size.
+- `drag`: Float64, the drag coefficient.
+- `max_iter`: Int64, the maximum number of iterations. Default is 1000.
+- `x_tol`: Float64, the tolerance for position. Default is 1.0e-3.
+- `f_tol`: Float64, the tolerance for force. Default is 1.0e-3.
+
+# Example
+```
+solver = QSDrag(1.0e-3, 1.0e-3)
+```
+
+# See also
+- `QSDrag`
+- `apply_solver!`
+- `minimize!`
+"""
 struct QSDrag <: QuasiStaticSolver
     step_size
     drag
@@ -7,15 +29,66 @@ struct QSDrag <: QuasiStaticSolver
 end
 
 
+"""
+    QSDrag(step_size, drag; max_iter=1000, x_tol=1.0e-3, f_tol=1.0e-3)
+
+Create a QSDrag solver.
+
+# Arguments
+- `step_size`: Float64, the step size.
+- `drag`: Float64, the drag coefficient.
+
+# Keyword Arguments
+- `max_iter`: Int64, the maximum number of iterations. Default is 1000.
+- `x_tol`: Float64, the tolerance for position. Default is 1.0e-3.
+- `f_tol`: Float64, the tolerance for force. Default is 1.0e-3.
+
+# Example
+```
+solver = QSDrag(1.0e-3, 1.0e-3)
+```
+"""
 function QSDrag(step_size, drag; max_iter=1000, x_tol=1.0e-3, f_tol=1.0e-3)
     deviceconvert(QSDrag(step_size, drag, max_iter, x_tol, f_tol))
 end
 
 
+"""
+    apply_solver!(env, solver::QSDrag)
+
+Apply the QSDrag solver to the environment.
+
+# Arguments
+- `env`: GeneralEnv, the environment.
+- `solver`: QSDrag, the QSDrag solver.
+
+# Example
+```
+solver = QSDrag(1.0e-3, 1.0e-3)
+apply_solver!(env, solver)
+```
+"""
 function apply_solver!(env, solver::QSDrag)
     minimize!(env, solver)
 end
 
+
+
+"""
+    minimize!(env, solver::QSDrag)
+
+Minimize the environment using the QSDrag solver.
+
+# Arguments
+- `env`: GeneralEnv, the environment.
+- `solver`: QSDrag, the QSDrag solver.
+
+# Example
+```
+solver = QSDrag(1.0e-3, 1.0e-3)
+minimize!(env, solver)
+```
+"""
 function minimize!(env::GeneralEnv, solver::QSDrag)
     step_size = solver.step_size
     lambda = solver.drag
@@ -142,4 +215,3 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
 end
 
 SOLVERS[:qs] = QSDrag
-
