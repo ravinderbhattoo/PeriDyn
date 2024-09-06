@@ -1,6 +1,0 @@
-[deps]
-PDMaterialPoints = "699b3a5d-6dba-4e2a-88ec-3ad113d1b49e"
-PeriDyn = "c3db0ce0-6d7e-41b5-be11-bcb6aafada44"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
-SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
