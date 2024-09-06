@@ -26,6 +26,9 @@ struct QSDrag <: QuasiStaticSolver
     step_size
     drag
     @qssolver_gf
+    # max_iter
+    # x_tol
+    # f_tol
 end
 
 
@@ -59,7 +62,7 @@ end
 Apply the QSDrag solver to the environment.
 
 # Arguments
-- `env`: GeneralEnv, the environment.
+- `env`: GeneralEnvironment, the environment.
 - `solver`: QSDrag, the QSDrag solver.
 
 # Example
@@ -77,10 +80,20 @@ end
 """
     minimize!(env, solver::QSDrag)
 
-Minimize the environment using the QSDrag solver.
+Minimize the environment using the QSDrag solver. The QSDrag solver is a
+quasi-static solver that uses a drag force to minimize the energy of the system.
+The drag force is given by `-λv(1 + k|v|)`, where `λ` is the drag coefficient
+and `k` is a constant. The constant `k` is set to `λ/10` by default.
+The drag force is applied to the particles in the system, and the particles are
+moved by `Δy = 0.5FΔt^2 + vΔt`, where `F` is the drag force, `Δt` is the step size,
+and `v` is the velocity of the particles. The particles are clipped to a maximum
+displacement of `ps/10`, where `ps` is the particle size, and the velocity is
+clipped to a maximum velocity of `ps/10/Δt`. The solver is applied to the system
+until the maximum number of iterations is reached or the maximum displacement
+and force are below the given tolerances.
 
 # Arguments
-- `env`: GeneralEnv, the environment.
+- `env`: the simulation environment.
 - `solver`: QSDrag, the QSDrag solver.
 
 # Example
@@ -89,7 +102,7 @@ solver = QSDrag(1.0e-3, 1.0e-3)
 minimize!(env, solver)
 ```
 """
-function minimize!(env::GeneralEnv, solver::QSDrag)
+function minimize!(env, solver::QSDrag)
     step_size = solver.step_size
     lambda = solver.drag
     max_iter = solver.max_iter
@@ -104,10 +117,10 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
     dt = step_size
     ps = env.material_blocks[1].general.particle_size
 
-    x_tol = ps * 1.0e-4
-    f_tol = x_tol / dt^2
+    # x_tol = ps * 1.0e-4
+    # f_tol = x_tol / dt^2
 
-    log_impinfo("Bypassing given tolerance values.\nusing x_tol = $(x_tol) and f_tol = $(f_tol).")
+    # log_impinfo("Bypassing given tolerance values.\nusing x_tol = $(x_tol) and f_tol = $(f_tol).")
 
     function clip(x; a=1.0)
         max.(min.(x, a), -a)
@@ -198,17 +211,20 @@ function minimize!(env::GeneralEnv, solver::QSDrag)
         # end
 
         if ((f_tol_ < f_tol) && (x_tol_ < x_tol))  #&& i > 100 #|| (x_tol_ < x_tol) ) && i > 100
+            ProgressBars.clear_progress(iter)
             log_info("Tolerance reached, iter $i. x_tol $x_tol_ <= $x_tol or f_tol $f_tol_ <= $f_tol")
             break
         end
         if i==max_iter
-            log_impinfo("Maximum iteration, iter $i ($max_iter) reached. x_tol $x_tol_ !<= $x_tol and f_tol $f_tol_ !<= $f_tol")
+            ProgressBars.clear_progress(iter)
+            log_info("Maximum iteration, iter $i ($max_iter) reached. x_tol $x_tol_ !<= $x_tol and f_tol $f_tol_ !<= $f_tol")
         end
-        set_postfix(iter, Iter=i, X_tol=round(x_tol_, digits=6), F_tol=round(f_tol_, digits=6), MaxF=round(maximum(env.f), digits=6))
+        set_postfix(iter, Iter=i, X_tol=round(x_tol_, digits=6), F_tol=round(f_tol_, digits=6))
     end
+    ProgressBars.clear_progress(iter)
 
     for bc in env.boundary_conditions
-        check!(bc, env)
+        check!(env, bc)
     end
 
     env.time_step += 1
