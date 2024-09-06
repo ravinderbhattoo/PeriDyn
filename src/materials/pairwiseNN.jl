@@ -27,20 +27,20 @@ end
 
 
 """
-    force_density_T(mat::PairwiseNNSpecific)
+    force_density_T!(mat::PairwiseNNSpecific)
 
 Calculates force density (actually acceleration) for bond based material type.
 """
-function force_density_T(y::Array{Float64,2}, mat::PairwiseNNSpecific; kwargs...)
-    force_density_T(y, mat, :cpu; kwargs)
+function force_density_T!(y::Array{Float64,2}, mat::PairwiseNNSpecific; kwargs...)
+    force_density_T!(y, mat, :cpu; kwargs)
 end
 
 # """
-#     force_density_T(mat::PairwiseNNMaterial)
+#     force_density_T!(mat::PairwiseNNMaterial)
 
 # Calculates force density (actually acceleration) for bond based material type.
 # """
-# function force_density_T(y::Array{Float64,2}, mat::PairwiseNNMaterial; particles=nothing)
+# function force_density_T!(y::Array{Float64,2}, mat::PairwiseNNMaterial; particles=nothing)
 #     types = mat.general.type
 #     x = mat.general.x
 #     intact = mat.general.intact
@@ -87,7 +87,7 @@ end
 
 
 
-function force_density_T(y::Array{Float64,2}, mat::PairwiseNNMaterial, ::Type{Val{:cpu}}; particles=nothing)
+function force_density_T!(y::Array{Float64,2}, mat::PairwiseNNMaterial, ::Type{Val{:cpu}}; particles=nothing)
     types = mat.general.type
     x = mat.general.x
     intact = mat.general.intact
@@ -159,11 +159,11 @@ end
 
 
 # """
-#     force_density_T(mat::PairwiseNNMaterial)
+#     force_density_T!(mat::PairwiseNNMaterial)
 
 # Calculates force density (actually acceleration) for bond based material type.
 # """
-# function force_density_T(y::Array{Float64,2}, mat::PairwiseNNMaterial, ::Type{Val{:cpu}}; particles=nothing)
+# function force_density_T!(y::Array{Float64,2}, mat::PairwiseNNMaterial, ::Type{Val{:cpu}}; particles=nothing)
 #     force_buf = zeros(eltype(y), size(y)...)
 #     # force_buf = Zygote.Buffer(force)
 #     types = mat.general.type
@@ -241,11 +241,11 @@ function unroll_model(N)
 end
 
 """
-    force_density_T(mat::PairwiseNNMaterial)
+    force_density_T!(mat::PairwiseNNMaterial)
 
 Calculates force density (actually acceleration) for bond based material type.
 """
-function force_density_T(y::Array{Float64,2}, mat::PairwiseNNMaterial, ::Type{Val{:cuda}}; particles=nothing)
+function force_density_T!(y::Array{Float64,2}, mat::PairwiseNNMaterial, ::Type{Val{:cuda}}; particles=nothing)
 
     force = CUDA.CuArray(zeros(eltype(y), size(y)))
     y = CUDA.CuArray(y)

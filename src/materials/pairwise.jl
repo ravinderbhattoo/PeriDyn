@@ -4,7 +4,7 @@ export PairWiseMaterial, force_density_T
 PairWiseMaterial = Union{BondBasedMaterial,PairwiseNNMaterial}
 
 
-function force_density_T(y::Array{Float64,2}, mat::T, ::Type{Val{:cpu}}; particles=nothing) where T <: PairWiseMaterial
+function force_density_T!(y::Array{Float64,2}, mat::T, ::Type{Val{:cpu}}; particles=nothing) where T <: PairWiseMaterial
     types = mat.general.type
     x = mat.general.x
     intact = mat.general.intact
