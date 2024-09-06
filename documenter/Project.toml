@@ -1,0 +1,7 @@
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DocThemeIndigo = "8bac0ac5-51bf-41f9-885e-2bf1ac2bec5f"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+PDMaterialPoints = "699b3a5d-6dba-4e2a-88ec-3ad113d1b49e"
+PeriDyn = "c3db0ce0-6d7e-41b5-be11-bcb6aafada44"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"

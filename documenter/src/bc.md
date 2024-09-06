@@ -2,44 +2,29 @@
 
 Boundary conditions in PeriDyn are used to specify the behavior of material particles at the selected material location in a simulation. The page lists different types of boundary conditions that are predefined in the package.
 
+__List of predefined boundary conditions:__
+- [`FixBC`](@ref) (Fix Boundary Condition)
+- [`ToFroBC`](@ref) (To and Fro Boundary Condition)
+- [`MoveBC`](@ref) (Move Boundary Condition)
+- [`DeltaScaleBC`](@ref) (Delta Scale Boundary Condition)
+- [`ScaleFixWaitBC`](@ref) (Scale Fix Wait Boundary Condition)
+
+
 ## Predefined boundary conditions
 
-- [`FixBC`](bc.html/#PeriDyn.FixBC) (Fix Boundary Condition): This boundary condition fixes the position and velocity of particles at specific boundary regions. It is typically used to simulate rigid walls or immovable boundaries. For example, it can be used to fix the position of particles at the start of the simulation to represent a fixed boundary.
+- [`FixBC`](@ref) (Fix Boundary Condition): This boundary condition fixes the position and velocity of particles at specific boundary regions. It is typically used to simulate rigid walls or immovable boundaries. For example, it can be used to fix the position of particles at the start of the simulation to represent a fixed boundary.
 
-```@docs
-FixBC
-FixBC(bool; onlyatstart=false)
-```
+- [`ToFroBC`](@ref) (To and Fro Boundary Condition): This boundary condition imparts a prescribed motion to particles at specific boundary regions. It allows particles to move back and forth within a specified direction and frequency. It is useful for simulating boundaries with oscillatory motion. For instance, it can be used to simulate a boundary that moves back and forth periodically.
 
-- [`ToFroBC`](bc.html/#PeriDyn.ToFroBC) (To and Fro Boundary Condition): This boundary condition imparts a prescribed motion to particles at specific boundary regions. It allows particles to move back and forth within a specified direction and frequency. It is useful for simulating boundaries with oscillatory motion. For instance, it can be used to simulate a boundary that moves back and forth periodically.
+- [`MoveBC`](@ref) (Move Boundary Condition): This boundary condition imparts a constant velocity to particles at specific boundary regions. It is commonly used to simulate boundaries subjected to external forces or displacements. For example, it can be applied to particles at the boundary of a bar to represent a constant velocity movement.
 
-```@docs
-ToFroBC
-ToFroBC(bool, rate, freq; applyafter=0, onlyatstart=false)
-```
+- [`DeltaScaleBC`](@ref) (Delta Scale Boundary Condition): This boundary condition applies a scaling factor to particles at specific boundary regions. It can be used to simulate deformations or changes in the size of the material. For instance, it can be used to scale particles near a boundary to represent a stretching or compression effect.
 
-- [`MoveBC`](bc.html/#PeriDyn.MoveBC) (Move Boundary Condition): This boundary condition imparts a constant velocity to particles at specific boundary regions. It is commonly used to simulate boundaries subjected to external forces or displacements. For example, it can be applied to particles at the boundary of a bar to represent a constant velocity movement.
+- [`ScaleFixWaitBC`](@ref) (Scale Fix Wait Boundary Condition): This boundary condition applies a scaling factor to particles after a specified number of time steps. It allows particles to be scaled or deformed over time. It can be useful for simulating time-dependent deformations. For example, it can be used to gradually apply a scaling effect to particles at the boundary after a certain waiting period.
 
-```@docs
-MoveBC
-```
 
-- [`DeltaScaleBC`](bc.html/#PeriDyn.DeltaScaleBC) (Delta Scale Boundary Condition): This boundary condition applies a scaling factor to particles at specific boundary regions. It can be used to simulate deformations or changes in the size of the material. For instance, it can be used to scale particles near a boundary to represent a stretching or compression effect.
-
-```@docs
-DeltaScaleBC
-DeltaScaleBC(bool, scale, fixpoint; onlyatstart=false)
-```
-
-- [`ScaleFixWaitBC`](bc.html/#PeriDyn.ScaleFixWaitBC) (Scale Fix Wait Boundary Condition): This boundary condition applies a scaling factor to particles after a specified number of time steps. It allows particles to be scaled or deformed over time. It can be useful for simulating time-dependent deformations. For example, it can be used to gradually apply a scaling effect to particles at the boundary after a certain waiting period.
-
-```@docs
-ScaleFixWaitBC
-ScaleFixWaitBC(bool, scale, fixpoint, wait, scalebool; applyafter=0, onlyatstart=false)
-```
-
-# Custom boundary conditions
-A custom boundary condition can also be defined by the user which should be a subtype of [`BoundaryCondition`](bc.html/#PeriDyn.BoundaryCondition) abstract type. These boundary conditions are applied to the position and velocity aspects of the particles in the simulation defined by `xF` and `vF` functions respectively. They define the behavior of the particles at the boundaries and can be customized based on the specific requirements of the simulation. [`apply_bc!`](bc.html/#PeriDyn.apply_bc!) and [`apply_bc_at0!`](bc.html/#PeriDyn.apply_bc_at0!) functions are used to apply the boundary conditions to the particles in the simulation. The [`check!`](bc.html/#PeriDyn.check!) function is used to check if the boundary conditions are applied correctly to the particles in the simulation. [`apply_bc!`](bc.html/#PeriDyn.apply_bc!), [`apply_bc_at0!`](bc.html/#PeriDyn.apply_bc_at0!) and [`check!`](bc.html/#PeriDyn.check!) functions are defined for [`BoundaryCondition`](bc.html/#PeriDyn.BoundaryCondition) abstract type and can be overloaded by the user to define custom boundary conditions. The default implementation of these functions is as follows.
+## Custom boundary conditions
+A custom boundary condition can also be defined by the user which should be a subtype of [`BoundaryCondition`](@ref) abstract type. These boundary conditions are applied to the position and velocity aspects of the particles in the simulation defined by `xF` and `vF` functions respectively. They define the behavior of the particles at the boundaries and can be customized based on the specific requirements of the simulation. [`apply_bc!`](@ref) and [`apply_bc_at0!`](@ref) functions are used to apply the boundary conditions to the particles in the simulation. The [`check!`](@ref) function is used to check if the boundary conditions are applied correctly to the particles in the simulation. [`apply_bc!`](@ref), [`apply_bc_at0!`](@ref) and [`check!`](@ref) functions are defined for [`BoundaryCondition`](@ref) abstract type and can be overloaded by the user to define custom boundary conditions. The default implementation of these functions is as follows.
 
 ```julia
 """
@@ -188,14 +173,4 @@ the `CustomNameBC`. Used for dynamic boundary conditions.
 function check!(env, BC::CustomNameBC)
     # write logic here for e.g. BC.bool .= env.y[:, 1] .> 0.5
 end
-```
-
-```@docs
-BoundaryCondition
-```
-
-```@docs
-apply_bc!
-apply_bc_at0!
-check!
 ```

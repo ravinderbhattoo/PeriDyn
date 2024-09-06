@@ -1,49 +1,43 @@
+
 # Contact models
+
 In PeriDyn, there is a comprehensive set of contact models for peridynamics simulation. These contact models define the physical interactions between material particles and enable the accurate representation of contact forces and repulsion effects. In this post, we will explore the various contact models available in PeriDyn and provide an overview of the associated functions.
 
-The repulsion models offer different formulations for calculating the repulsive forces between particles based on their relative positions. They are designed to simulate contact forces and prevent particle overlap, providing flexibility in modeling different contact behaviors. Such models can be applied to prevent overlap of particles of same material block and also between particles of different material blocks. The repulsion models are implemented as subtypes of the [`RepulsionModel`](#PeriDyn.RepulsionModel) abstract type. The following repulsion models are defined in PeriDyn:
+The contact models offer different formulations for calculating the repulsive forces between particles based on their relative positions. They are designed to simulate contact forces and prevent particle overlap, providing flexibility in modeling different contact behaviors. Such models can be applied to prevent overlap of particles of same material block and also between particles of different material blocks. The contact models are implemented as subtypes of the [`ContactModel`](@ref) abstract type. The following contact models are defined in PeriDyn:
 
-```@docs
-RepulsionModel11
-RepulsionModel12
-```
+- [`ContactModel11`](@ref)
+- [`ContactModel12`](@ref)
 
-Here, `RepulsionModel11` is a repulsion model that calculates the repulsive forces between particles of the same material block. `RepulsionModel12` is a repulsion model that calculates the repulsive forces between particles of different material blocks.
+Here, [`ContactModel11`](@ref) is a contact model that calculates the repulsive forces between particles of the same material block. [`ContactModel12`](@ref) is a contact model that calculates the repulsive forces between particles of different material blocks.
 
-## Short Range Repulsion Models
+## Short Range Contact Models
 
-The ShortRangeRepulsionModel implements bond-based peridynamics forces for short-range repulsion interactions. It incorporates repulsive forces to ensure particles do not overlap within a specified range.
-```@docs
-ShortRangeRepulsionModel
-```
+The [`ShortRangeContactModel`](@ref) implements bond-based peridynamics forces for short-range contact interactions. It incorporates repulsive forces to ensure particles do not overlap within a specified range.
 
 ## Simple Spring Models
 
 PeriDyn also provides simple spring-like contact models that can be used in peridynamics simulations. These models describe the contact behavior between particles using spring forces based on their relative positions. The available models include:
 
-```@docs
-NonLinearSpringRepulsionModel
-LinearSpringRepulsionModel
-```
+- [`NonLinearSpringContactModel`](@ref)
+- [`LinearSpringContactModel`](@ref)
 
-## LJ Models
+## Functions for Contact Models
 
-The LJRepulsionModel represents a contact model based on the repulsive part of Lennard-Jones potential.
+PeriDyn provides several functions that are utilized for working with contact models. These functions facilitate the implementation and calculation of repulsion forces within the contact models.
 
-```@docs
-LJRepulsionModel
-```
+- [`get_contact_force_fn`](@ref)
+- [`short_range_contact!`](@ref)
+- [`collision_box`](@ref)
+- [`update_contact_neighs!`](@ref)
+- [`ContactModel11_gcal`](@ref)
+- [`ContactModel12_gcal`](@ref)
 
-## Functions for Repulsion Models
+## Key Considerations
 
-PeriDyn provides several functions that are utilized for working with repulsion models. These functions facilitate the implementation and calculation of repulsion forces within the contact models.
+- **Neighbour Search**: To efficiently compute contact forces, contact models need to determine which material points are in contact. This is typically done using a neighbour search algorithm. The package includes functions like [`update_contact_neighs!`](@ref) that handle neighbour list updates for contact interactions.
+- **Collision Detection**: Before calculating contact forces, the code often performs collision detection to determine if material blocks are potentially overlapping. This can be observed in functions like [`collision_box`](@ref), which defines a bounding box around material points to check for overlap.
 
-```@docs
-repulsion_force
-short_range_repulsion!
-collision_box
-update_repulsive_neighs!
-RepulsionModel11_gcal
-RepulsionModel12_gcal
-```
+
+
+
 

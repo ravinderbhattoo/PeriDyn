@@ -2,5 +2,7 @@
 CurrentModule = PeriDyn
 ```
 
+# Index
+
 ```@index
 ```

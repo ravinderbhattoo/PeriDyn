@@ -1,1 +1,1 @@
-Creating material points for a given geometry can be done using MaterialPoints.jl package. Please see the package [documentation](https://ravinderbhattoo.github.io/PDMaterialPoints.jl) and [examples](/examples.html).
+Creating material points for a given geometry can be done using MaterialPoints.jl package. Please see the package [documentation](https://ravinderbhattoo.github.io/PDMaterialPoints.jl) and [examples](examples.md).
