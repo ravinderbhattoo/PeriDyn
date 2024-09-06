@@ -1,17 +1,29 @@
 # PeriDyn
-Peridynamics implementation in Julia.
+
+[![Coverage](https://codecov.io/gh/ravinderbhattoo/PeriDyn/branch/master/graph/badge.svg)](https://codecov.io/gh/ravinderbhattoo/PeriDyn) [![Generic badge](https://img.shields.io/badge/docs-ghpages-blue.svg)](https://ravinderbhattoo.github.io/PeriDyn)
+
+
+<img src="https://ravinderbhattoo.github.io/PeriDyn/assets/diskdamage.png" alt="logo" style="display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;"/>
+
+
+PeriDyn is a numerical simulation software designed to solve peridynamics problems. It is written in the Julia programming language, and offers a high level of flexibility and speed. PDBenchmark is built on top of the PeriDyn package, which provides a number of predefined material models and benchmark problems. This allows users to quickly set up and run simulations, and compare their results to established benchmarks.
+
 
 ## Instructions
 
 ### Installation
 ```
 import Pkg
-Pkg.add(url="https://github.com/ravinderbhattoo/PDMaterialPoints.jl")
-Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
+Pkg.add(url="https://github.com/ravinderbhattoo/PDMaterialPoints")
+Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn")
 ```
 
 ### Documentation
-[HTML (incomplete)](https://ravinderbhattoo.github.io/PeriDyn)
+[HTML](https://ravinderbhattoo.github.io/PeriDyn)
+
 [PDF](https://ravinderbhattoo.github.io/files/PeriDyn.pdf)
 
 ## Material models
@@ -24,10 +36,6 @@ Pkg.add(url="https://github.com/ravinderbhattoo/PeriDyn.git")
 1. Linear and nonlinear repulsive model
 2. User defined contact model
 
-# Examples
-
-## Bar tensile simulation
-- [bb_and_osb.jl](https://github.com/ravinderbhattoo/PeriDyn/blob/master/examples/tensile/bb_and_osb.jl)
 
 # Videos
 
