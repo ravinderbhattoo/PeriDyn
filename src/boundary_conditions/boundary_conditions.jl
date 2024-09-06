@@ -11,24 +11,27 @@ Abstract type for boundary conditions.
 """
 abstract type BoundaryCondition end
 
-function _cudaconvert(x::Vector{T}) where T <: BoundaryCondition
-    _cudaconvert.(x)
-end
-
-function _cudaconvert(x::T) where T <: BoundaryCondition
-    T((_cudaconvert(getfield(x, k)) for k in fieldnames(T))...)
-end
-
 function Base.show(io::IO, i::BoundaryCondition)
-    println(io, typeof(i))
+    print(io, getPanel(i))
+end
+
+function getPanel(i::BoundaryCondition; ptype=SPanel, width=Term.default_width())
+    txt = ""
     for j in fieldnames(typeof(i))
         item = getproperty(i, j)
+        # check if iterable
+        txt = txt * "$(variable_color(j)): "
         if isa(item, AbstractArray)
-            println(io, j, ": $(typeof(item)) $(size(item))")
+            txt = txt * array_repr(item)
         else
-            println(io, j, ": ", item)
+            txt = txt * "$(item)\n"
         end
     end
+    txt = txt[1:end-1]
+    return ptype(txt,
+        title="$(typeof(i))",
+        justify=:left,
+        width=width)
 end
 
 """
@@ -58,6 +61,7 @@ Macro for defining the common fields of a general boundary condition.
 
 The following fields are defined:
 - `bool`: Boolean array specifying the affected material points.
+- `dims`: Boolean array specifying the affected dimensions.
 - `last`: Array of the same type as the state vector specifying the last state of the affected material points.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start (default: `false`).
 - `xF`: function for updating the position.
@@ -65,12 +69,17 @@ The following fields are defined:
 """
 @def general_bc_p begin
     bool::AbstractArray{T, 1} where T
+    dims::AbstractArray{Bool, 1}
     last::AbstractArray{T, 2} where T
     onlyatstart::Bool
     xF::Function
     vF::Function
 end
 
+
+###############################################
+# apply BCs
+###############################################
 
 """
     apply_bc!(env, BC::BoundaryCondition, on::Symbol)
@@ -83,7 +92,7 @@ Apply the specified boundary condition `BC` to the given environment `env` on th
 - `on::Symbol`: The aspect on which the boundary condition is applied (`:position` or `:velocity`).
 """
 function apply_bc!(env, BC::T, on::Symbol) where T<:BoundaryCondition
-    apply_bc!(env, BC, Val{on})
+    @timeit timings "BC $(on)" apply_bc!(env, BC, Val{on})
 end
 
 """
@@ -97,7 +106,7 @@ Apply the general boundary condition `BC` to the position aspect of the given en
 """
 function apply_bc!(env, BC::T, ::Type{Val{:position}}) where T <: BoundaryCondition
     a, b = BC.xF(env, BC)
-    env.y[:, BC.bool] .= a
+    env.y[BC.dims, BC.bool] .= a
     BC.last .= b
 end
 
@@ -112,10 +121,39 @@ Apply the general boundary condition `BC` to the velocity aspect of the given en
 """
 function apply_bc!(env, BC::T, ::Type{Val{:velocity}}) where T <: BoundaryCondition
     a, b = BC.vF(env, BC)
-    env.v[:, BC.bool] .= a
+    env.v[BC.dims, BC.bool] .= a
     BC.last .= b
 end
 
+###############################################
+# Unit stripping
+###############################################
+
+function uconvert_to(DIMS, BC::T) where T <: BoundaryCondition
+    args = (uconvert_to(DIMS, getfield(BC, k)) for k in fieldnames(T))
+    return T(args...)
+end
+
+function ustrip(BC::T) where T <: BoundaryCondition
+    args = (ustrip(getfield(BC, k)) for k in fieldnames(T))
+    return T(args...)
+end
+
+###############################################
+# cuda
+###############################################
+function _cudaconvert(x::Vector{T}) where T <: BoundaryCondition
+    _cudaconvert.(x)
+end
+
+function _cudaconvert(x::T) where T <: BoundaryCondition
+    T((_cudaconvert(getfield(x, k)) for k in fieldnames(T))...)
+end
+
+
+###############################################
+# add BCs
+###############################################
 
 include("./FixBC.jl")
 include("./ToFroBC.jl")

@@ -11,6 +11,7 @@ Struct representing the ContainerBC boundary condition.
 
 # Fields
 - `bool`: Boolean array specifying the affected elements.
+- `dims`: Boolean array specifying the affected dimensions.
 - `last`: Last position of the affected elements.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
 - `xF`: function for updating the position.
@@ -19,10 +20,12 @@ Struct representing the ContainerBC boundary condition.
 struct ContainerBC <: BoundaryCondition
     @general_bc_p
     # bool::AbstractArray{Bool, 1}
+    # dims::AbstractArray{Bool, 1}
     # last::AbstractArray{Float64, 2}
     # onlyatstart::Bool
     # xF::Function
     # vF::Function
+    limits::Matrix{T} where T
 end
 
 
@@ -34,13 +37,17 @@ Construct a ContainerBC boundary condition.
 # Arguments
 - `bool`: Boolean array specifying the affected elements.
 - `limits`: Limits of the container (default: `nothing`).
+
+## Keyword Arguments
+- `dims`: Boolean array specifying the affected dimensions (default: `[true, true, true]`).
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start (default: `false`).
 
 # Returns
 A ContainerBC object representing the boundary condition.
 """
-function ContainerBC(bool; limits=nothing, onlyatstart=false)
-    last = [nothing;;] # Abstract Matrix of last positions
+function ContainerBC(bool; limits=nothing, dims=[true, true, true], onlyatstart=false)
+    dims = dims[1:SPATIAL_DIMENSIONS_REF[]]
+    last = [0;;] # Abstract Matrix of last positions
     if isa(limit, Nothing)
         xF = (env, BC) -> begin
                         nothing
@@ -48,20 +55,21 @@ function ContainerBC(bool; limits=nothing, onlyatstart=false)
         vF = (env, BC) -> begin
                         nothing
                     end
-        return deviceconvert(ContainerBC(bool, last, onlyatstart, xF, vF))
+        return deviceconvert(ContainerBC(bool, dims, last, onlyatstart, xF, vF))
     else
+        limits = limits[1:SPATIAL_DIMENSIONS_REF[], :]
         xF = (env, BC) -> begin
-                        y = @view env.y[:, BC.bool]
+                        y = @view env.y[BC.dims, BC.bool]
                         y, BC.last
                     end
         vF = (env, BC) -> begin
-                        v = @view env.v[:, BC.bool]
-                        y = @view env.y[:, BC.bool]
-                        mask = reshape(any(y .< limits[:, 1] .|| y .> limits[:, 2], dims=1), :)
-                        v[:, mask] .= 0.0
+                        v = @view env.v[BC.dims, BC.bool]
+                        y = @view env.y[BC.dims, BC.bool]
+                        mask = reshape(any(y .< BC.limits[:, 1] .|| y .> BC.limits[:, 2], dims=1), :)
+                        v[BC.dims, mask] .= 0.0
                         v, BC.last
                     end
-        return deviceconvert(ContainerBC(bool, last, onlyatstart, xF, vF))
+        return deviceconvert(ContainerBC(bool, dims, last, onlyatstart, xF, vF, limits))
     end
 end
 

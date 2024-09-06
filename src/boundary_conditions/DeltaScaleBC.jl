@@ -11,6 +11,7 @@ Struct representing the DeltaScaleBC boundary condition.
 
 # Fields
 - `bool`: Boolean array specifying the affected elements.
+- `dims`: Boolean array specifying the affected dimensions.
 - `last`: Last position of the affected elements.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
 - `xF`: function for updating the position.
@@ -19,6 +20,7 @@ Struct representing the DeltaScaleBC boundary condition.
 struct DeltaScaleBC <: BoundaryCondition
     @general_bc_p
     # bool::AbstractArray{Bool, 1}
+    # dims::AbstractArray{Bool, 1}
     # last::AbstractArray{Float64, 2}
     # onlyatstart::Bool
     # xF::Function
@@ -33,22 +35,28 @@ Construct a DeltaScaleBC boundary condition.
 # Arguments
 - `bool`: Boolean array specifying the affected elements.
 - `scale`: Scale factor applied to the elements.
+
+## Keyword Arguments
+- `dims`: Boolean array specifying the affected dimensions (default: `[true, true, true]`).
 - `fixpoint`: Reference point used for scaling.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start (default: `false`).
 
 # Returns
 A DeltaScaleBC object representing the boundary condition.
 """
-function DeltaScaleBC(bool, scale, fixpoint; onlyatstart=false)
+function DeltaScaleBC(bool, scale, fixpoint; dims=[true, true, true], onlyatstart=false)
+    dims = dims[1:SPATIAL_DIMENSIONS_REF[]]
+    scale = scale[1:SPATIAL_DIMENSIONS_REF[]]
+    fixpoint = fixpoint[1:SPATIAL_DIMENSIONS_REF[]]
     scale = deviceconvert(scale)
     fixpoint = deviceconvert(fixpoint)
-    last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
+    last = 1*zeros(eltype(fixpoint), SPATIAL_DIMENSIONS_REF[], sum(bool))
     xF = (env, BC) -> begin
                 y = (BC.last .- reshape(fixpoint, :)) .* (1 .+ reshape(scale, :)*env.dt*env.time_step) .+ reshape(fixpoint, :)
                 (y, BC.last)
             end
-    vF = (env, BC) -> ( 0.0, BC.last )
-    deviceconvert(DeltaScaleBC(bool, last, onlyatstart, xF, vF))
+    vF = (env, BC) -> ( 0.0*unit(eltype(env.v)), BC.last )
+    deviceconvert(DeltaScaleBC(bool, dims, last, onlyatstart, xF, vF))
 end
 
 
@@ -62,7 +70,7 @@ Apply the DeltaScaleBC boundary condition at time 0 to the given environment `en
 - `BC`: The DeltaScaleBC boundary condition to apply.
 """
 function apply_bc_at0!(env, BC::DeltaScaleBC)
-    BC.last .= env.y[:, BC.bool]
+    BC.last .= env.y[BC.dims, BC.bool]
 end
 
 """

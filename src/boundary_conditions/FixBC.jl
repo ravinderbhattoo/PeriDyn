@@ -11,6 +11,7 @@ Struct representing the FixBC boundary condition.
 
 # Fields
 - `bool`: Boolean array specifying the affected elements.
+- `dims`: Boolean array specifying the affected dimensions.
 - `last`: Last position of the affected elements.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
 - `xF`: function for updating the position.
@@ -19,6 +20,7 @@ Struct representing the FixBC boundary condition.
 struct FixBC <: BoundaryCondition
     @general_bc_p
     # bool::AbstractArray{Bool, 1}
+    # dims::AbstractArray{Bool, 1}
     # last::AbstractArray{Float64, 2}
     # onlyatstart::Bool
     # xF::Function
@@ -33,16 +35,20 @@ Construct a FixBC boundary condition.
 
 # Arguments
 - `bool`: Boolean array specifying the affected elements.
+
+## Keyword Arguments
+- `dims`: Boolean array specifying the affected dimensions (default: `[true, true, true]`).
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start (default: `false`).
 
 # Returns
 A FixBC object representing the boundary condition.
 """
-function FixBC(bool; onlyatstart=false)
-    last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
+function FixBC(bool; dims=[true, true, true], onlyatstart=false)
+    dims = dims[1:SPATIAL_DIMENSIONS_REF[]]
+    last = 1*zeros(QF, SPATIAL_DIMENSIONS_REF[], sum(bool))
     xF = (env, BC) -> (BC.last, BC.last)
-    vF = (env, BC) -> (0.0, BC.last)
-    deviceconvert(FixBC(bool, last, onlyatstart, xF, vF))
+    vF = (env, BC) -> (0.0*unit(eltype(env.v)), BC.last)
+    deviceconvert(FixBC(bool, dims, last, onlyatstart, xF, vF))
 end
 
 """
@@ -55,6 +61,6 @@ Apply the FixBC boundary condition at time 0 to the given environment `env`.
 - `BC`: The FixBC boundary condition to apply.
 """
 function apply_bc_at0!(env, BC::FixBC)
-    BC.last .= env.y[:, BC.bool]
+    BC.last .= env.y[BC.dims, BC.bool]
 end
 

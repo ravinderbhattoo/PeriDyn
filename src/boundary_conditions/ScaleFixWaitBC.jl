@@ -11,6 +11,7 @@ Structure representing a ScaleFixWaitBC boundary condition.
 
 # Fields
 - `bool`: Boolean array specifying the affected elements.
+- `dims`: Boolean array specifying the affected dimensions.
 - `last`: Last position of the affected elements.
 - `onlyatstart`: Flag indicating if the boundary condition is applied only at the start.
 - `xF`: function for updating the position.
@@ -33,27 +34,33 @@ Construct a ScaleFixWaitBC boundary condition.
 - `fixpoint`: Fix point for the elements.
 - `wait`: Number of time steps to wait before applying the condition.
 - `scalebool`: Boolean array specifying the elements to be scaled.
+
+# Keyword Arguments
+- `dims`: Boolean array specifying the affected dimensions (default: `[true, true, true]`).
 - `applyafter`: Number of time steps after which the condition is applied (default: 0).
 - `onlyatstart`: Boolean indicating whether the condition is applied only at the start (default: false).
 
 # Returns
 - An instance of ScaleFixWaitBC boundary condition.
 """
-function ScaleFixWaitBC(bool, scale, fixpoint, wait, scalebool; applyafter=0, onlyatstart=false)
+function ScaleFixWaitBC(bool, scale, fixpoint, wait, scalebool; dims=[true, true, true], applyafter=0, onlyatstart=false)
+    dims = dims[1:SPATIAL_DIMENSIONS_REF[]]
+    fixpoint = fixpoint[1:SPATIAL_DIMENSIONS_REF[]]
+    scale = scale[1:SPATIAL_DIMENSIONS_REF[]]
     fixpoint = deviceconvert(fixpoint)
     scale = deviceconvert(scale)
-    last = zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
+    last = 1*zeros(Float64, SPATIAL_DIMENSIONS_REF[], sum(bool))
     xF = (env, BC) -> (BC.last, BC.last)
     vF = (env, BC) -> (0.0, BC.last)
     checkF = (env, BC) -> begin
         if (env.time_step % wait == 0)
-            y = env.y[:, scalebool]
+            y = env.y[BC.dims, scalebool]
             y .= (y .- reshape(fixpoint, :)) .* sqrt.(1 .+ 2*reshape(scale, :)*env.dt) .+ reshape(fixpoint, :)
-            env.y[:, scalebool] .= y
-            BC.last .= env.y[:, BC.bool]
+            env.y[BC.dims, scalebool] .= y
+            BC.last .= env.y[BC.dims, BC.bool]
         end
     end
-    deviceconvert(ScaleFixWaitBC(bool, last, onlyatstart, xF, vF, checkF))
+    deviceconvert(ScaleFixWaitBC(bool, dims, last, onlyatstart, xF, vF, checkF))
 end
 
 """
@@ -66,7 +73,7 @@ Apply the ScaleFixWaitBC boundary condition at time 0.
 - `BC`: Instance of ScaleFixWaitBC boundary condition.
 """
 function apply_bc_at0!(env, BC::ScaleFixWaitBC)
-    BC.last .= env.y[:, BC.bool]
+    BC.last .= env.y[BC.dims, BC.bool]
 end
 
 """
