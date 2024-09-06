@@ -1,16 +1,21 @@
 name = "PeriDyn"
 uuid = "c3db0ce0-6d7e-41b5-be11-bcb6aafada44"
 authors = ["Ravinder Bhattoo <ravinderbhattoo@gmail.com>"]
-version = "0.1.1"
+version = "0.2.0"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Folds = "41a02a25-b8f0-4f67-bc48-60067656b558"
-JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+PDMaterialPoints = "699b3a5d-6dba-4e2a-88ec-3ad113d1b49e"
 ProgressBars = "49802e3a-d2f1-5c88-81d8-b72133a6f568"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Term = "22787eb5-b846-44ae-b979-8e399b8463ab"
+TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+cuDNN = "02a925ec-e4fe-4b08-9a7e-0d78e3d38ccd"
