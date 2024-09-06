@@ -1,71 +1,80 @@
 """
-This module contains functions for calculating the repulsive forces between material points.
+This module contains functions for calculating the contact forces between material points.
 """
 
-export RepulsionModel11, RepulsionModel12
-export RepulsionModel11_gcal, RepulsionModel12_gcal
-export short_range_repulsion!, collision_box, update_repulsive_neighs!
-
-"""
-    RepulsionModel11
-
-Abstract type for repulsion model for a single material type.
-"""
-abstract type RepulsionModel11 end
+export ContactModel, ContactModel11, ContactModel12
+export ContactModel11_gcal, ContactModel12_gcal
+export short_range_contact!
+export collision_box, update_contact_neighs!
 
 
 """
-    RepulsionModel12
+    ContactModel
 
-Abstract type for repulsion model for two material types.
+Abstract type for contact model.
 """
-abstract type RepulsionModel12 end
+abstract type ContactModel end
 
-@def RepulsionModel_gf begin
+"""
+    ContactModel11
+
+Abstract type for contact model for a single material block.
+"""
+abstract type ContactModel11 <: ContactModel end
+
+
+"""
+    ContactModel12
+
+Abstract type for contact model between two material blocks.
+"""
+abstract type ContactModel12 <: ContactModel end
+
+@def ContactModel_gf begin
     name::String
-    equi_dist::Float64
-    distance::Float64
+    equi_dist::QF
+    distance::QF
     neighs::AbstractArray{Int64,2}
     max_neighs::Int64
 end
 
-@def RepulsionModel12_gf begin
-    pair::Vector{AbstractVector{Int64}}
+@def ContactModel12_gf begin
+    pair::Pair{AbstractVector{Int64}, AbstractVector{Int64}}
     # name::String
-    # equi_dist::Float64
-    # distance::Float64
+    # equi_dist::QF
+    # distance::QF
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
-    @RepulsionModel_gf
+    @ContactModel_gf
 end
 
-@def RepulsionModel11_gf begin
+@def ContactModel11_gf begin
     type::AbstractVector{Int64}
     bid::Int64
     material::GeneralMaterial
     # name::String
-    # equi_dist::Float64
-    # distance::Float64
+    # equi_dist::QF
+    # distance::QF
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
-    @RepulsionModel_gf
+    @ContactModel_gf
 end
 
 """
-    RepulsionModel12_gcal(mat1, mat2, distanceX, max_neighs)
+    ContactModel12_gcal(mat1, mat2, distanceX, max_neighs)
 
-Calculate the parameters for `RepulsionModel12` based on the input materials, distance, and maximum neighbors.
+Calculate the parameters for `ContactModel12` based on the input materials, distance, and maximum neighbors.
 
 Arguments:
-- `mat1`: The first material (type `RepulsionModel11`).
-- `mat2`: The second material (type `RepulsionModel11`).
+- `mat1`: The first material (type `ContactModel11`).
+- `mat2`: The second material (type `ContactModel11`).
 - `distanceX`: The distance factor.
 - `max_neighs`: The maximum number of neighbors.
 
-Returns a tuple containing the calculated parameters for `RepulsionModel12`.
+Returns a tuple containing the calculated parameters for `ContactModel12`.
 """
-function RepulsionModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
-    pair = [mat1.type, mat2.type]
+function ContactModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
+    pair = Pair(mat1.type, mat2.type)
     name = "$(mat1.name)-$(mat2.name)"
     equi_dist = (mat1.general.particle_size + mat2.general.particle_size) / 2 * distanceD
     distance = distanceX * equi_dist
@@ -74,26 +83,26 @@ function RepulsionModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
     # Order of arguments is important
     # pair::Vector{AbstractVector{Int64}}
     # name::String
-    # equi_dist::Float64
-    # distance::Float64
+    # equi_dist::QF
+    # distance::QF
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
     return pair, name, equi_dist, distance, neighs, max_neighs
 end
 
 """
-    RepulsionModel11_gcal(mat1, distanceX, max_neighs)
+    ContactModel11_gcal(mat1, distanceX, max_neighs)
 
-Calculate the parameters for `RepulsionModel11` based on the input material, distance, and maximum neighbors.
+Calculate the parameters for `ContactModel11` based on the input material, distance, and maximum neighbors.
 
 Arguments:
-- `mat1`: The material (type `RepulsionModel11`).
+- `mat1`: The material (type `ContactModel11`).
 - `distanceX`: The distance factor.
 - `max_neighs`: The maximum number of neighbors.
 
-Returns a tuple containing the calculated parameters for `RepulsionModel11`.
+Returns a tuple containing the calculated parameters for `ContactModel11`.
 """
-function RepulsionModel11_gcal(mat1, distanceD, distanceX, max_neighs)
+function ContactModel11_gcal(mat1, distanceD, distanceX, max_neighs)
     type = mat1.type
     bid = mat1.blockid
     material = mat1.general
@@ -107,49 +116,99 @@ function RepulsionModel11_gcal(mat1, distanceD, distanceX, max_neighs)
     # bid::Int64
     # material::GeneralMaterial
     # name::String
-    # equi_dist::Float64
-    # distance::Float64
+    # equi_dist::QF
+    # distance::QF
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
     return type, bid, material, name, equi_dist, distance, neighs, max_neighs
 end
 
 
-function Base.show(io::IO, i::Union{RepulsionModel11, RepulsionModel12})
-    """
-    Print the details of a RepulsionModel object.
+"""
+Print the details of a ContactModel object.
 
-    # Arguments
-    - `io::IO`: The output IO stream.
-    - `i::Union{RepulsionModel11, RepulsionModel12}`: The RepulsionModel object to print.
-    """
-    println(io, typeof(i))
-    for j in fieldnames(typeof(i))
-        if j in [:neighs]
-        else
-        println(io, j, ": ", getproperty(i, j))
-        end
-    end
+# Arguments
+- `io::IO`: The output IO stream.
+- `i::Union{ContactModel11, ContactModel12}`: The ContactModel object to print.
+"""
+function Base.show(io::IO, i::Union{ContactModel11, ContactModel12})
+    print(io, getPanel(i))
 end
 
-export short_range_repulsion!, collision_box, update_repulsive_neighs!
+function getPanel(i::ContactModel; ptype=SPanel, width=Term.default_width())
+    txt = @bold(@blue("$(typeof(i))")) * "\n"
+    for j in fieldnames(typeof(i))
+        item = getproperty(i, j)
+        txt = txt * "$(variable_color(j)): "
+        if j in [:neighs]
+            txt = txt * "$(size(getproperty(i, j)))" * "\n"
+        elseif j==:material
+            txt = txt * "\n$(getPanel(getproperty(i, j); ptype=DPanel, width=width-6))"
+        else
+            # check if iterable
+            if isa(item, AbstractArray)
+                txt = txt * array_repr(item)
+            else
+                txt = txt * "$(item)\n"
+            end
+        end
+    end
+    txt = txt[1:end-1]
+    return ptype(txt,
+        title=i.name,
+        justify=:left,
+        # subtitle=@blue("$(typeof(i))"),
+        # subtitle_justify=:center,
+        width=width)
+end
 
+
+###############################################
+# short range contact
+###############################################
+
+export short_range_contact!, collision_box, update_contact_neighs!
 
 """
-    short_range_repulsion!(y, f, type, RepulsionModel)
+    short_range_contact!(y, f, type, bid, vol, RM::ContactModel12)
 
-Updates (inplace) the repulsive acceleration of material points.
+Updates (inplace) the contact acceleration of material points.
+
+# Arguments
+- `y`: Positions of material points
+- `f`: Acceleration of material points
+- `type`: Type of material points
+- `bid`: BID values
+- `vol`: Volume values
+- `RM::ContactModel12`: Repulsion model
+
+# Output
+- No return value. The function updates `f` in place.
+
+"""
+function short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel12)
+    device = DEVICE[]
+    device = :cpu
+    log_info("short_range_contact! 12 used ($device).")
+    short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel12, Val{device})
+end
+
+"""
+    short_range_contact!(y, f, type, ContactModel)
+
+Updates (inplace) the contact acceleration of material points.
 
 ## Arguments
 - `y`: Positions of material points.
 - `f`: Acceleration of material points.
 - `type`: Type of material points.
-- `RepulsionModel`: Repulsion model (see contacts.jl for more details).
+- `ContactModel`: Repulsion model (see contacts.jl for more details).
 
 ## Output
 - None (Inplace update of f (acceleration)).
 """
-function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel12)
+function short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel12, device::Type{Val{:cpu}})
+    force_fn = get_contact_force_fn(RM)
     mask1 = false
     for i in RM.pair[1]
         mask1 = mask1 .| (type .== i)
@@ -158,34 +217,40 @@ function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel12)
     for i in RM.pair[2]
         mask2 = mask2 .| (type .== i)
     end
-    f1 = Array(f[:, mask1])
-    f2 = Array(f[:, mask2])
-    x1 = Array(y[:, mask1])
-    x2 = Array(y[:, mask2])
-    vol1 = Array(vol[mask1])
-    vol2 = Array(vol[mask2])
-    neighs = Array(RM.neighs)
-    for i in 1:size(neighs, 2)
-        for k in 1:size(neighs, 1)
-            j = neighs[k,i]
+    f1 = @view f[:, mask1]
+    f2 = @view f[:, mask2]
+    x1 = @view y[:, mask1]
+    x2 = @view y[:, mask2]
+    vol1 = @view vol[mask1]
+    vol2 = @view vol[mask2]
+    den1 = @view den[mask1]
+    den2 = @view den[mask2]
+    neighs = RM.neighs
+    M, N = size(neighs)
+    Threads.@threads for i in 1:N
+        _den1_i = 1/den1[i]
+        for k in 1:M
+            j = neighs[k, i]
             if j>0
-                force = repulsion_force(x1[:, i] .- x2[:, j], RM)
-                f1[:,i] .+= force * vol2[j]
-                f2[:,j] .-=  force * vol1[i]
+                _den2_j = 1/den2[j]
+                dr = (x1[1, i] - x2[1, j],
+                        x1[2, i] - x2[2, j],
+                        x1[3, i] - x2[3, j])
+                force = force_fn(dr)
+                f1[:,i] .+= force .* (vol2[j] * _den1_i)
+                f2[:,j] .-=  force .* (vol1[i] * _den2_j)
             end
             if j==0 break end
         end
     end
-    f[:, mask1] .= typeof(f)(f1)
-    f[:, mask2] .= typeof(f)(f2)
     return nothing
 end
 
 
 """
-    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11)
+    short_range_contact!(y, f, type, bid, vol, RM::ContactModel11)
 
-Updates (inplace) the repulsive acceleration of material points.
+Updates (inplace) the contact acceleration of material points.
 
 # Arguments
 - `y`: Positions of material points
@@ -193,21 +258,21 @@ Updates (inplace) the repulsive acceleration of material points.
 - `type`: Type of material points
 - `bid`: BID values
 - `vol`: Volume values
-- `RM::RepulsionModel11`: Repulsion model
+- `RM::ContactModel11`: Repulsion model
 
 # Output
 - No return value. The function updates `f` in place.
 
 """
-function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11)
+function short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel11)
     device = DEVICE[]
-    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, Val{device})
+    short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel11, Val{device})
 end
 
 """
-    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cuda}})
+    short_range_contact!(y, f, type, bid, vol, RM::ContactModel11, device::Type{Val{:cuda}})
 
-Updates (inplace) the repulsive acceleration of material points.
+Updates (inplace) the contact acceleration of material points.
 
 # Arguments
 - `y`: Positions of material points
@@ -215,21 +280,21 @@ Updates (inplace) the repulsive acceleration of material points.
 - `type`: Type of material points
 - `bid`: BID values
 - `vol`: Volume values
-- `RM::RepulsionModel11`: Repulsion model
+- `RM::ContactModel11`: Repulsion model
 - `device::Type{Val{:cuda}}`: Device type for CUDA acceleration
 
 # Output
 - No return value. The function updates `f` in place.
 
 """
-function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cuda}})
-    force_fn = get_repulsion_force_fn(RM)
+function short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel11, device::Type{Val{:cuda}})
+    force_fn = get_contact_force_fn(RM)
     mask1 = bid .== RM.bid
 
-    type = type[mask1]
-    f1 = f[:,mask1]
-    x1 = y[:,mask1]
-    vol1 = vol[mask1]
+    type = @view type[mask1]
+    f1 = @view f[:, mask1]
+    x1 = @view y[:, mask1]
+    vol1 = @view vol[mask1]
     neighs = RM.neighs
 
     function cal_force(x1, vol1, neighs, type, f1)
@@ -266,15 +331,15 @@ function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, devi
 
     CUDA.@sync kernel(x1, vol1, neighs, type, f1; threads=nthreads, blocks=nblocks)
     # f1 = apply_kernel(cal_force, x1, vol1, neighs, type, f1)[end]
-    f[:, mask1] .= typeof(f)(f1)
+    # f[:, mask1] .= typeof(f)(f1)
     return nothing
 end
 
 
 """
-    short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cpu}})
+    short_range_contact!(y, f, type, bid, vol, RM::ContactModel11, device::Type{Val{:cpu}})
 
-Updates (inplace) the repulsive acceleration of material points.
+Updates (inplace) the contact acceleration of material points.
 
 # Arguments
 - `y`: Positions of material points
@@ -282,33 +347,42 @@ Updates (inplace) the repulsive acceleration of material points.
 - `type`: Type of material points
 - `bid`: BID values
 - `vol`: Volume values
-- `RM::RepulsionModel11`: Repulsion model
+- `RM::ContactModel11`: Repulsion model
 - `device::Type{Val{:cpu}}`: Device type for CPU acceleration
 
 # Output
 - No return value. The function updates `f` in place.
 
 """
-function short_range_repulsion!(y, f, type, bid, vol, RM::RepulsionModel11, device::Type{Val{:cpu}})
-    force_fn = get_repulsion_force_fn(RM)
+function short_range_contact!(y, f, type, bid, vol, den, RM::ContactModel11, device::Type{Val{:cpu}})
+    force_fn = get_contact_force_fn(RM)
     mask1 = bid .== RM.bid
     f1 = @view f[:, mask1]
     x1 = @view y[:, mask1]
     vol1 = @view vol[mask1]
-    for i in 1:size(RM.neighs, 2)
-        Threads.@threads for k in 1:size(RM.neighs, 1)
-            j = RM.neighs[k,i]
+    den1 = @view den[mask1]
+    M, N = size(RM.neighs)
+    neighs = RM.neighs
+    Threads.@threads for i in 1:N
+        _den_i = den1[i]
+        for k in 1:M
+            j = neighs[k,i]
             if j != 0
-                force = force_fn(x1[:, i] .- x1[:, j])
-                f1[:,i] .+= force * vol1[j]
-                f1[:,j] .-=  force * vol1[i]
+                _den_j = den1[j]
+                dr = get_ij(i, j, x1)
+                force = force_fn(dr)
+                # (force_density[force/vol/vol] * volume)
+                f1[:, i] .+= force .* (vol1[j] / _den_i)
+                f1[:, j] .-=  force .* (vol1[j] / _den_j)
             end
         end
     end
-    # f[:, mask1] .= f1
     return nothing
 end
 
+###############################################
+# update contact neibours
+###############################################
 
 """
     collision_box(x1::Array{Float64,2}, x2::Array{Float64,2}, skin::Float64)
@@ -326,7 +400,7 @@ Calculates collision box between two material blocks.
 - `ifoverlap`: Boolean indicating if there is an overlap
 
 """
-function collision_box(x1::AbstractArray, x2::AbstractArray, skin::Float64)
+function collision_box(x1::AbstractArray, x2::AbstractArray, skin::T) where T
     min1 = minimum(x1,dims=2).-skin
     min2 = minimum(x2,dims=2).-skin
     max1 = maximum(x1,dims=2).+skin
@@ -334,7 +408,7 @@ function collision_box(x1::AbstractArray, x2::AbstractArray, skin::Float64)
     box_min = max.(min1,min2)
     box_max = min.(max1,max2)
     vol = prod(box_max-box_min)
-    if vol<0.0
+    if vol < zero(vol)
         return box_min, box_max, false
     else
         return box_min, box_max, true
@@ -343,22 +417,22 @@ end
 
 
 """
-    update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothing)
+    update_contact_neighs!(y, type, RM::ContactModel12; max_part=nothing)
 
-Update neighbor list for repulsive force calculation (1-2 interaction).
+Update neighbor list for contact force calculation (1-2 interaction).
 
 # Arguments
 - `y`: Positions of material points
 - `type`: Type of material points
-- `RM::RepulsionModel12`: Repulsion model
+- `RM::ContactModel12`: Repulsion model
 - `max_part=nothing`: Maximum number of particles (optional)
 
 # Output
 - No return value. The function updates `RM.neighs` in place.
 
 """
-function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothing)
-    log_info("Updating repulsive neighs ...")
+function update_contact_neighs!(y, type, RM::ContactModel12; max_part=nothing)
+    log_info("Updating contact neighs ...")
     _mask1 = false
     for i in RM.pair[1]
         _mask1 = _mask1 .| (type .== i)
@@ -369,8 +443,8 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothin
         _mask2 = _mask2 .| (type .== i)
     end
 
-    x11 = Array(y[:, _mask1])
-    x22 = Array(y[:, _mask2])
+    x11 = @view y[:, _mask1]
+    x22 = @view y[:, _mask2]
 
     RM.neighs .= 0
 
@@ -378,11 +452,11 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothin
     if ifcheck
         mask1 = reshape(prod(x11.>box_min,dims=1) .* prod(x11.<box_max,dims=1),:)
         mask2 = reshape(prod(x22.>box_min,dims=1) .* prod(x22.<box_max,dims=1),:)
-        x1 = x11[1:end, mask1]
-        x2 = x22[1:end, mask2]
+        x1 = @view x11[1:end, mask1]
+        x2 = @view x22[1:end, mask2]
         a_id = collect(1:size(x22,2))[mask2]
-        family = zeros(Float64, max(RM.max_neighs, size(x2,2)), size(x1,2))
-        for i in 1:size(x1,2)
+        family = zeros(Int64, max(RM.max_neighs, size(x2,2)), size(x1,2))
+        Threads.@threads for i in 1:size(x1,2)
             a1,b1,c1 = x1[1,i],x1[2,i],x1[3,i]
             for j in 1:size(x2,2)
                 a2,b2,c2 = x2[1,j],x2[2,j],x2[3,j]
@@ -393,45 +467,45 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel12; max_part=nothin
         end
         family = sort(family,dims=1)
         RM.neighs[1:end, mask1] = family[end:-1:end+1-RM.max_neighs,1:end]
-        log_info("Average repulsive neighs: $(sum(RM.neighs .> 0.5) / (1+size(x1, 2)))")
+        log_info("Average contact neighs: $(sum(RM.neighs .> 0.5) / (1+size(x1, 2)))")
     else
         RM.neighs[1:end, 1:end] .= 0
-        log_info("No repulsive neighs.")
+        log_info("No contact neighs.")
     end
     log_info("Done")
 end
 
 
 """
-    update_repulsive_neighs!(y, type, RM::RepulsionModel11; kwargs...)
+    update_contact_neighs!(y, type, RM::ContactModel11; kwargs...)
 
-Update neighbor list for repulsive force calculation (1-1 interaction).
+Update neighbor list for contact force calculation (1-1 interaction).
 
 # Arguments
 - `y`: Positions of material points
 - `type`: Type of material points
-- `RM::RepulsionModel11`: Repulsion model
+- `RM::ContactModel11`: Repulsion model
 - `kwargs...`: Additional keyword arguments
 
 # Output
 - No return value. The function updates `RM.neighs` in place.
 
 """
-function update_repulsive_neighs!(y, type, RM::RepulsionModel11; kwargs...)
+function update_contact_neighs!(y, type, RM::ContactModel11; kwargs...)
     device = DEVICE[]
-    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device; kwargs...)
+    update_contact_neighs!(y, type, RM::ContactModel11, device; kwargs...)
 end
 
 
 """
-    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Symbol; kwargs...)
+    update_contact_neighs!(y, type, RM::ContactModel11, device::Symbol; kwargs...)
 
-Update neighbor list for repulsive force calculation (1-1 interaction) on a specific device.
+Update neighbor list for contact force calculation (1-1 interaction) on a specific device.
 
 # Arguments
 - `y`: Positions of material points
 - `type`: Type of material points
-- `RM::RepulsionModel11`: Repulsion model
+- `RM::ContactModel11`: Repulsion model
 - `device::Symbol`: Device type for acceleration
 - `kwargs...`: Additional keyword arguments
 
@@ -439,21 +513,21 @@ Update neighbor list for repulsive force calculation (1-1 interaction) on a spec
 - No return value. The function updates `RM.neighs` in place.
 
 """
-function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Symbol; kwargs...)
-    update_repulsive_neighs!(y, type, RM::RepulsionModel11, Val{device}; kwargs...)
+function update_contact_neighs!(y, type, RM::ContactModel11, device::Symbol; kwargs...)
+    update_contact_neighs!(y, type, RM::ContactModel11, Val{device}; kwargs...)
 end
 
 
 """
-    update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
+    update_contact_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
 
-Update the neighbor list for repulsive force calculation.
+Update the neighbor list for contact force calculation.
 
 # Arguments
 - `neighbors`: Array storing the neighbor indices
 - `x`: Positions of material points
 - `search_distance`: Maximum search distance for neighbors
-- `equi_dist`: Equilibrium distance for repulsion
+- `equi_dist`: Equilibrium distance for contact
 - `family`: Array indicating the family relationship between material points
 - `intact`: Array indicating if the family relationship is intact
 - `max_part`: Maximum number of particles in a cell
@@ -462,34 +536,32 @@ Update the neighbor list for repulsive force calculation.
 - No return value. The function updates the `neighbors` array in place.
 
 """
-function update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
+function update_contact_neighs!(mask, neighbors, x, search_distance, equi_dist, family, intact, max_part)
     cells, cell_neighs = get_cells(x, search_distance; max_part=max_part)
-    Threads.@threads for cell_i in 1:length(cells)
-        for ca_id in 1:length(cells[cell_i])
+    FS = size(family, 1)
+    equi_dist2 = equi_dist^2
+    for cell_i in 1:length(cells)
+        Threads.@threads for ca_id in 1:length(cells[cell_i])
             ind = 1
             ca = cells[cell_i][ca_id]
-            a1,b1,c1 = x[1,ca],x[2,ca],x[3,ca]
-            for neigh_id in 1:length(cell_neighs[cell_i])
-                neighs = cells[cell_neighs[cell_i][neigh_id]]
-                for fa_id in 1:length(neighs)
-                    fa = neighs[fa_id]
-                    if fa != ca
-                        ifbroken = true
-                        # Check if family is intact
-                        for k in size(family, 1):-1:1
-                            if (fa == family[k, ca])
-                                if intact[k, ca] == 1
-                                    ifbroken = false
-                                end
-                                break
-                            end
+            if mask[ca]
+                a1,b1,c1 = x[1,ca],x[2,ca],x[3,ca]
+                for neigh_id in 1:length(cell_neighs[cell_i])
+                    neighs = sort!(cells[cell_neighs[cell_i][neigh_id]])
+                    fms = @view family[:, ca]
+                    fm_ind = 1
+                    for neigh in neighs
+                        while (fms[fm_ind] < neigh) && (fm_ind < FS)
+                            fm_ind += 1
                         end
-                        if ifbroken
-                            a2,b2,c2 = x[1,fa], x[2,fa], x[3,fa]
-                            dr2 = ((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))
-                            if dr2 < equi_dist^2
-                                neighbors[ind, ca] = fa
-                                ind += 1
+                        if fms[fm_ind] == neigh
+                            if ~intact[fm_ind, ca]
+                                a2,b2,c2 = x[1,neigh], x[2,neigh], x[3,neigh]
+                                dr2 = ((a1-a2)*(a1-a2)+(b1-b2)*(b1-b2)+(c1-c2)*(c1-c2))
+                                if dr2 < equi_dist2
+                                    neighbors[ind, ca] = neigh
+                                    ind += 1
+                                end
                             end
                         end
                     end
@@ -497,18 +569,18 @@ function update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, fami
             end
         end
     end
-    log_info("Average repulsive neighs: $(sum(neighbors .> 0.5)/size(x, 2))")
+    log_info("Average contact neighs: $(sum(neighbors .> 0.5)/size(x, 2))")
 end
 
 """
-    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cpu}}; max_part=30)
+    update_contact_neighs!(y, type, RM::ContactModel11, device::Type{Val{:cpu}}; max_part=30)
 
-Update the neighbor list for repulsive force calculation (1-1 interaction).
+Update the neighbor list for contact force calculation (1-1 interaction).
 
 # Arguments
 - `y`: Positions of material points
 - `type`: Type of material points
-- `RM::RepulsionModel11`: Repulsion model for 1-1 interaction
+- `RM::ContactModel11`: Repulsion model for 1-1 interaction
 - `device::Type{Val{:cpu}}`: Device type (CPU)
 - `max_part=30`: Maximum number of particles in a cell
 
@@ -516,30 +588,31 @@ Update the neighbor list for repulsive force calculation (1-1 interaction).
 - No return value. The function updates the neighbor list in the `RM` object.
 
 """
-function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cpu}}; max_part=30)
+function update_contact_neighs!(y, type, RM::ContactModel11, device::Type{Val{:cpu}}; max_part=30)
     mask = false
     for j in RM.type
         mask = mask .| (type .== j)
     end
-    x = y[:, mask]
+    x = @view y[:, mask]
     neighbors = RM.neighs
     search_distance = RM.distance
     equi_dist = RM.equi_dist
     family = RM.material.family
     intact = RM.material.intact
-    fill!(neighbors,0)
-    update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
+    mask = any((family .> 0) .& map(~, intact) ; dims=1)
+    fill!(neighbors, 0)
+    update_contact_neighs!(mask, neighbors, x, search_distance, equi_dist, family, intact, max_part)
 end
 
 """
-    update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cuda}}; max_part=30)
+    update_contact_neighs!(y, type, RM::ContactModel11, device::Type{Val{:cuda}}; max_part=30)
 
-Update neighbor list for repulsive force calculation (1-1 interaction).
+Update neighbor list for contact force calculation (1-1 interaction).
 
 # Arguments
 - `y`: Positions of material points
 - `type`: Type of material points
-- `RM::RepulsionModel11`: Repulsion model for 1-1 interaction
+- `RM::ContactModel11`: Repulsion model for 1-1 interaction
 - `device::Type{Val{:cuda}}`: Device type (CUDA)
 - `max_part=30`: Maximum number of particles in a cell
 
@@ -547,11 +620,12 @@ Update neighbor list for repulsive force calculation (1-1 interaction).
 - No return value. The function updates the neighbor list in the `RM` object.
 
 """
-function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Val{:cuda}}; max_part=30)
+function update_contact_neighs!(y, type, RM::ContactModel11, device::Type{Val{:cuda}}; max_part=30)
     mask = false
     for j in RM.type
         mask = mask .| (type .== j)
     end
+    mask = Array(mask)
     x = Array(y[:, mask])
     neighbors = Array(RM.neighs)
     search_distance = RM.distance
@@ -559,28 +633,31 @@ function update_repulsive_neighs!(y, type, RM::RepulsionModel11, device::Type{Va
     family = Array(RM.material.family)
     intact = Array(RM.material.intact)
     fill!(neighbors,0)
-    update_repulsive_neighs!(neighbors, x, search_distance, equi_dist, family, intact, max_part)
+    update_contact_neighs!(mask, neighbors, x, search_distance, equi_dist, family, intact, max_part)
     RM.neighs .= CuArray(neighbors)
     nothing
 end
 
+###############################################
+# _cudaconvert
+###############################################
 
 """
-    _cudaconvert(x::Vector{T}) where T <: Union{RepulsionModel11,RepulsionModel12}
+    _cudaconvert(x::Vector{T}) where T <: Union{ContactModel11,ContactModel12}
 
-Converts a vector of `RepulsionModel11` or `RepulsionModel12` objects to CUDA-compatible types.
+Converts a vector of `ContactModel11` or `ContactModel12` objects to CUDA-compatible types.
 """
-function _cudaconvert(x::Vector{T}) where T <: Union{RepulsionModel11,RepulsionModel12}
+function _cudaconvert(x::Vector{T}) where T <: Union{ContactModel11,ContactModel12}
     _cudaconvert.(x)
 end
 
 
 """
-    _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
+    _cudaconvert(x::T) where T <: Union{ContactModel11,ContactModel12}
 
-Converts a single `RepulsionModel11` or `RepulsionModel12` object to a CUDA-compatible type.
+Converts a single `ContactModel11` or `ContactModel12` object to a CUDA-compatible type.
 """
-function _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
+function _cudaconvert(x::T) where T <: Union{ContactModel11} # ContactModel12 not implemented yet
     function fn(x, k)
         if k!=:material
             return _cudaconvert(getfield(x, k))
@@ -591,11 +668,27 @@ function _cudaconvert(x::T) where T <: Union{RepulsionModel11,RepulsionModel12}
     T((fn(x, k) for k in fieldnames(T))...)
 end
 
+###############################################
+# unit conversion
+###############################################
+
+function uconvert_to(DIMS, RM::T) where T <: ContactModel
+    args = (uconvert_to(DIMS, getfield(RM, k)) for k in fieldnames(T))
+    return T(args...)
+end
+
+function ustrip(RM::T) where T <: ContactModel
+    args = (ustrip(getfield(RM, k)) for k in fieldnames(T))
+    return T(args...)
+end
+
+###############################################
+# contact models
+###############################################
 
 include("./nonlinearspring.jl")
 include("./linearspring.jl")
 include("./shortrange.jl")
-include("./LJ.jl")
 
 
 #

@@ -1,56 +1,56 @@
 """
-This module contains definitions for nonlinear repulsive models.
+This module contains definitions for nonlinear contact models.
 
-The following types and functions are exported: `NonLinearSpringRepulsionModel`, `NonLinearSpringRepulsionModel12`, `NonLinearSpringRepulsionModel11`, `repulsion_force`, and `get_repulsion_force_fn`.
+The following types and functions are exported: `NonLinearSpringContactModel`, `NonLinearSpringContactModel12`, `NonLinearSpringContactModel11`, `contact_force`, and `get_contact_force_fn`.
 """
 
-export NonLinearSpringRepulsionModel, NonLinearSpringRepulsionModel12, NonLinearSpringRepulsionModel11, repulsion_force, get_repulsion_force_fn
+export NonLinearSpringContactModel, NonLinearSpringContactModel12, NonLinearSpringContactModel11, contact_force, get_contact_force_fn
 
 
 """
-    NonLinearSpringRepulsionModel12(exponent::Float64, stifness::Float64, pair::Vector{AbstractVector{Int64}}, name::String, equi_dist::Float64, distance::Float64, neighs::AbstractArray{Int64, 2}, max_neighs::Int64)
+    NonLinearSpringContactModel12(exponent::Float64, stifness::Float64, pair::Vector{AbstractVector{Int64}}, name::String, equi_dist::Float64, distance::Float64, neighs::AbstractArray{Int64, 2}, max_neighs::Int64)
 
-Nonlinear repulsive model for 1-2 material blocks.
+Nonlinear contact model for 1-2 material blocks.
 """
-struct NonLinearSpringRepulsionModel12<:RepulsionModel12
+struct NonLinearSpringContactModel12<:ContactModel12
     exponent::Float64
-    stifness::Float64
+    stifness::QF
     # pair::Vector{AbstractVector{Int64}}
     # name::String
-    # equi_dist::Float64
-    # distance::Float64
+    # equi_dist::QF
+    # distance::QF
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
-    @RepulsionModel12_gf
+    @ContactModel12_gf
 end
 
 """
-    NonLinearSpringRepulsionModel11(exponent::Float64, stifness::Float64, type::AbstractVector{Int64}, bid::Int64, material::GeneralMaterial, name::String, equi_dist::Float64, distance::Float64, neighs::AbstractArray{Int64, 2}, max_neighs::Int64)
+    NonLinearSpringContactModel11(exponent::Float64, stifness::Float64, type::AbstractVector{Int64}, bid::Int64, material::GeneralMaterial, name::String, equi_dist::Float64, distance::Float64, neighs::AbstractArray{Int64, 2}, max_neighs::Int64)
 
-Nonlinear repulsive model for 1-1 material blocks.
+Nonlinear contact model for 1-1 material blocks.
 """
-struct NonLinearSpringRepulsionModel11<:RepulsionModel11
+struct NonLinearSpringContactModel11<:ContactModel11
     exponent::Float64
-    stifness::Float64
+    stifness::QF
     # type::AbstractVector{Int64}
     # bid::Int64
     # material::GeneralMaterial
     # name::String
-    # equi_dist::Float64
-    # distance::Float64
+    # equi_dist::QF
+    # distance::QF
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
-    @RepulsionModel11_gf
+    @ContactModel11_gf
 end
 
 """
-    NonLinearSpringRepulsionModel(exponent::Float64, stifness::Float64, mat1::PeridynamicsMaterial, mat2::PeridynamicsMaterial; distanceD=1.0, distanceX=3.0, max_neighs=50)
+    NonLinearSpringContactModel(exponent::Float64, stifness::Float64, mat1::PeridynamicsMaterial, mat2::PeridynamicsMaterial; distanceD=1.0, distanceX=3.0, max_neighs=50)
 
-Constructs a nonlinear repulsive model for 1-2 material blocks.
+Constructs a nonlinear contact model for 1-2 material blocks.
 
 Arguments:
-- `exponent`: The exponent for the repulsive force calculation.
-- `stifness`: The stiffness coefficient for the repulsive force calculation.
+- `exponent`: The exponent for the contact force calculation.
+- `stifness`: The stiffness coefficient for the contact force calculation.
 - `mat1`: The first PeridynamicsMaterial.
 - `mat2`: The second PeridynamicsMaterial.
 - `distanceD`: The distance factor for determining the search distance of neighbors within the same material.
@@ -58,9 +58,9 @@ Arguments:
 - `max_neighs`: The maximum number of neighbors to consider.
 
 Returns:
-A NonLinearSpringRepulsionModel12 object.
+A NonLinearSpringContactModel12 object.
 """
-function NonLinearSpringRepulsionModel(exponent, stifness,
+function NonLinearSpringContactModel(exponent, stifness,
                     mat1::PeridynamicsMaterial,
                     mat2::PeridynamicsMaterial;
                     distanceD=1.0,
@@ -70,27 +70,27 @@ function NonLinearSpringRepulsionModel(exponent, stifness,
     # Order of arguments:
     # exponent::Float64
     # stifness::Float64
-    # generated using RepulsionModel12_gcal
-    args = RepulsionModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
-    NonLinearSpringRepulsionModel12(exponent, stifness, args...)
+    # generated using ContactModel12_gcal
+    args = ContactModel12_gcal(mat1, mat2, distanceD, distanceX, max_neighs)
+    NonLinearSpringContactModel12(exponent, stifness, args...)
 end
 
 """
-    NonLinearSpringRepulsionModel(exponent::Float64, stifness::Float64, mat1::PeridynamicsMaterial; distanceX=5, max_neighs=50)
+    NonLinearSpringContactModel(exponent::Float64, stifness::Float64, mat1::PeridynamicsMaterial; distanceX=5, max_neighs=50)
 
-Constructs a nonlinear repulsive model for 1-1 material blocks.
+Constructs a nonlinear contact model for 1-1 material blocks.
 
 Arguments:
-- `exponent`: The exponent for the repulsive force calculation.
-- `stifness`: The stiffness coefficient for the repulsive force calculation.
+- `exponent`: The exponent for the contact force calculation.
+- `stifness`: The stiffness coefficient for the contact force calculation.
 - `mat1`: The PeridynamicsMaterial.
 - `distanceX`: The distance factor for determining the search distance of neighbors.
 - `max_neighs`: The maximum number of neighbors to consider.
 
 Returns:
-A NonLinearSpringRepulsionModel11 object.
+A NonLinearSpringContactModel11 object.
 """
-function NonLinearSpringRepulsionModel(exponent, stifness,
+function NonLinearSpringContactModel(exponent, stifness,
                                 mat1::PeridynamicsMaterial;
                                 distanceD=1.0,
                                 distanceX=5,
@@ -106,82 +106,39 @@ function NonLinearSpringRepulsionModel(exponent, stifness,
     # distance::Float64
     # neighs::AbstractArray{Int64,2}
     # max_neighs::Int64
-    args = RepulsionModel11_gcal(mat1, distanceD, distanceX, max_neighs)
-    NonLinearSpringRepulsionModel11(exponent, stifness, args...)
+    args = ContactModel11_gcal(mat1, distanceD, distanceX, max_neighs)
+    NonLinearSpringContactModel11(exponent, stifness, args...)
 end
 
 """
-    repulsion_force(dr, RepMod::NonLinearSpringRepulsionModel12)
+    get_contact_force_fn(RepMod::NonLinearSpringContactModel11)
 
-Calculates the repulsive acceleration for 1-2 material block interaction.
-
-Arguments:
-- `dr`: The vector representing the distance between particles.
-- `RepMod`: The NonLinearSpringRepulsionModel12 object.
-
-Returns:
-The repulsive acceleration as a vector.
-"""
-function repulsion_force(dr, RepMod::NonLinearSpringRepulsionModel12)
-    mag_dr = get_magnitude(dr) + 1.0e-10
-    del_x = RepMod.equi_dist - mag_dr
-    strain = del_x / RepMod.equi_dist
-    if del_x<0
-        return zeros(size(dr)...)
-    else
-        return ( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
-    end
-end
-
-
-"""
-    repulsion_force(dr, RepMod::NonLinearSpringRepulsionModel11)
-
-Calculates the repulsive acceleration for 1-1 material block interaction.
+Returns a contact force function for a NonLinearSpringContactModel11 object.
 
 Arguments:
-- `dr`: The vector representing the distance between particles.
-- `RepMod`: The NonLinearSpringRepulsionModel11 object.
+- `RepMod`: The NonLinearSpringContactModel11 object.
 
 Returns:
-The repulsive acceleration as a vector.
+A contact force function that takes a distance vector and returns the contact acceleration.
 """
-function repulsion_force(dr, RepMod::NonLinearSpringRepulsionModel11)
-    mag_dr = get_magnitude(dr) + 1.0e-10
-    del_x = RepMod.equi_dist - mag_dr
-    strain = del_x / RepMod.equi_dist
-    if del_x<0
-        return zeros(size(dr)...)
-    else
-        return ( RepMod.stifness * strain^RepMod.exponent )  .*dr/mag_dr
-    end
-end
-
-"""
-    get_repulsion_force_fn(RepMod::NonLinearSpringRepulsionModel11)
-
-Returns a repulsion force function for a NonLinearSpringRepulsionModel11 object.
-
-Arguments:
-- `RepMod`: The NonLinearSpringRepulsionModel11 object.
-
-Returns:
-A repulsion force function that takes a distance vector and returns the repulsive acceleration.
-"""
-function get_repulsion_force_fn(RepMod::NonLinearSpringRepulsionModel11)
+function get_contact_force_fn(RepMod::T) where
+        T<:Union{NonLinearSpringContactModel11,NonLinearSpringContactModel12}
     equi_size = RepMod.equi_dist
     expo = RepMod.exponent
     K = RepMod.stifness
+    # (force/vol/vol)
+    # 18K/πδ⁴ = force/area/length^4 = force/vol/vol
+    zero_ = zero(K)
 
     @inline function fn(dr)
-        mag_dr = get_magnitude(dr) + 1.0e-10
+        mag_dr = get_magnitude(dr)
         del_x = equi_size - mag_dr
         strain = del_x / equi_size
-        if del_x < 0
-            return [0.0, 0.0, 0.0]
+        if del_x < zero(del_x)
+            return zero_
         else
-            s = ( K * strain^expo )  / mag_dr
-            return s * dr
+            s = ( K * strain^expo )  / (mag_dr + 1e-10*unit(mag_dr))
+            return s .* dr
         end
     end
     return fn
