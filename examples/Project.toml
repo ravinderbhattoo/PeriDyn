@@ -1,0 +1,8 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+PDMaterialPoints = "699b3a5d-6dba-4e2a-88ec-3ad113d1b49e"
+PeriDyn = "c3db0ce0-6d7e-41b5-be11-bcb6aafada44"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
