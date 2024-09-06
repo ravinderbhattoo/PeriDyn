@@ -25,7 +25,6 @@ Manifest.toml
 
 *.data
 *.ipynb_checkpoints
-*.png
 *.pfig
 .fuse*
 .vscode
@@ -37,3 +36,5 @@ examples/drafts
 
 output
 examples/notebooks/output
+
+!docs/examples/*.png
