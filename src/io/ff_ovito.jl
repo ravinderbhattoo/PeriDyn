@@ -18,7 +18,8 @@ function jld2ovito(file, N; start=0, step=100)
         x = replace(file, "*"=>"$i")
         log_info("$(x)")
         out = jldread(x)
-        write_ovito(x*".data"; out...)
+        filename = replace(x, ".jld2"=>".data")
+        write_ovito(filename; out...)
     end
 end
 
@@ -63,13 +64,7 @@ Reads data from a JLD file.
 Note: This function uses the `load` function from the JLD package to read the data from the file, and converts it to a dictionary format.
 """
 function jldread(filename::String)
-    inp = Dict()
-    out = load(filename)
-    for pair in out
-        key, value = pair
-        merge!(inp, Dict(Symbol(key) => value))
-    end
-    return inp
+    Dict(Symbol(k)=>v for (k, v) in load(filename))
 end
 
 """
@@ -85,7 +80,7 @@ Note: This function writes data in Ovito data file format, with each column spec
 """
 function write_ovito(filename::String; kwargs...)
     col_names = sort(collect(keys(kwargs)))
-    args = [Array(kwargs[k]) for k in col_names]
+    args = [Array(1Unitful.ustrip(kwargs[k])) for k in col_names]
     item = kwargs[:id]
 
     if length(size(item)) > 1
@@ -99,6 +94,7 @@ function write_ovito(filename::String; kwargs...)
     else
         comment=""
     end
+
     file = open(filename, "w+")
     function getitems(i, arg)
         if length(size(arg)) == 1
@@ -133,9 +129,9 @@ Writes cell IDs to an Ovito data file.
 Note: This function writes the cell IDs to an Ovito data file, based on the particle coordinates and horizon value.
 """
 function write_ovito_cell_ids(filename::String, y::Matrix, horizon)
+    N = size(y, 2)
     cells, _ = get_cells(y, horizon)
     file = open(filename, "w+")
-    N = size(y, 2)
     write(file, "$N \n\n")
     ind = 1
     for i1 in 1:length(cells)
