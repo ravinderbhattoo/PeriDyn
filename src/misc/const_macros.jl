@@ -1,8 +1,28 @@
 export TIMEIT_REF, CHECK_NAN, SPATIAL_DIMENSIONS_REF, MULTI_THREAD_REF
-export check_nan, timeit, sinfo, swarning, sdetail, simpinfo, printsize, whatis
+export check_nan, time_code, sinfo, swarning, sdetail, simpinfo
 export _magnitude, _ij
 export refresh, set_multi_threading
 
+# Constants and variables
+const timings = TimerOutput(); disable_timer!(timings)
+SOLVERS =  Dict()
+const PDBlockID = Ref{Int64}(1)
+const DEVICE = Ref{Symbol}(:cpu)
+const TIMEIT_REF = Ref(false)
+const CHECK_NAN = Ref(true)
+const MULTI_THREAD_REF = Ref(true)
+const SPATIAL_DIMENSIONS_REF = Ref(3)
+
+"""
+    def(name, defination)
+
+Define a macro.
+
+# Arguments
+- `name`: Symbol, the name of the macro.
+- `defination`: Any, the defination of the macro.
+
+"""
 macro def(name, definition)
     return quote
         macro $(esc(name))()
@@ -11,69 +31,32 @@ macro def(name, definition)
     end
 end
 
-TIMEIT_REF = Ref(false)
-CHECK_NAN = Ref(true)
-MULTI_THREAD_REF = Ref(true)
-SPATIAL_DIMENSIONS_REF = Ref(3)
-LOGLEVEL=Ref(2)
+"""
+    set_multi_threading(x)
 
-macro swarning(x)
-    if LOGLEVEL[] >= 1
-        quote
-            printstyled("WARNING: ", $(esc(x)), "\n"; color = :red)
-        end
-    else
-    end
-end
+Set the multi threading.
 
-log_warning(x) = @swarning(x)
+# Arguments
+- `x`: Bool, the multi threading.
 
-macro simpinfo(x)
-    if LOGLEVEL[] >= 2
-        quote
-            printstyled("INFO: ", $(esc(x)), "\n"; color = :yellow, bold = true)
-        end
-    else
-    end
-end
-
-log_impinfo(x) = @simpinfo(x)
-
-macro sinfo(x)
-    if LOGLEVEL[] >= 3
-        quote
-            printstyled("INFO: ", $(esc(x)), "\n"; color = :green)
-        end
-    else
-    end
-end
-
-log_info(x) = @sinfo(x)
-
-macro sdetail(x)
-    if LOGLEVEL[] >= 4
-        quote
-            printstyled("INFO: ", $(esc(x)), "\n"; color = :blue)
-        end
-    else
-    end
-end
-
-log_detail(x) = @sdetail(x)
-
-function set_loglevel(x::Int64)
-    LOGLEVEL[] = x
-    @simpinfo "Log level: $(LOGLEVEL[])"
-    refresh()
-end
-
-
+"""
 function set_multi_threading(x)
     MULTI_THREAD_REF[] = x
     refresh()
     println("Multi threading: ", x)
 end
 
+
+"""
+    check_nan(var, name)
+
+Check if there is nan or inf in the variable.
+
+# Arguments
+- `var`: Any, the variable.
+- `name`: String, the name of the variable.
+
+"""
 macro check_nan(var, name)
     if CHECK_NAN[]
         quote
@@ -90,14 +73,18 @@ macro check_nan(var, name)
     end
 end
 
-function printsize(var...)
-    for var1 in var
-        print(size(var1), ", ")
-    end
-    var
-end
 
-macro timeit(ex, name)
+"""
+    time_code(ex, name)
+
+Time the execution of the expression.
+
+# Arguments
+- `ex`: Any, the expression.
+- `name`: String, the name of the expression.
+
+"""
+macro time_code(ex, name)
     if TIMEIT_REF[]
         quote
             local name = $(esc(name))
@@ -114,7 +101,15 @@ macro timeit(ex, name)
     end
 end
 
+"""
+    _magnitude(a)
 
+Get the magnitude of a vector depending on the spatial dimensions.
+
+# Arguments
+- `a`: Vector, the vector.
+
+"""
 macro _magnitude(a)
     if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
         quote
@@ -127,23 +122,70 @@ macro _magnitude(a)
     end
 end
 
+"""
+    get_magnitude(a)
+
+Get the magnitude of a vector depending on the spatial dimensions.
+
+# Arguments
+- `a`: Vector, the vector.
+
+"""
 get_magnitude(a) = @_magnitude(a)
 
+
+"""
+    _ij(j, i, x)
+
+Get the difference of two vectors depending on the spatial dimensions.
+
+``X_j - X_i``
+
+# Arguments
+- `j`: Int64, the index of the first vector.
+- `i`: Int64, the index of the second vector.
+- `x`: Matrix, the matrix of the vectors.
+
+"""
 macro _ij(j, i, x)
     if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
         quote
-            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))],
+            ($(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))],
                     $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))],
-                    $(esc(x))[3,$(esc(j))] - $(esc(x))[3,$(esc(i))]]
+                    $(esc(x))[3,$(esc(j))] - $(esc(x))[3,$(esc(i))])
         end
     else
         quote
-            [$(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))],
-                    $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))]]
+            ($(esc(x))[1,$(esc(j))] - $(esc(x))[1,$(esc(i))],
+                    $(esc(x))[2,$(esc(j))] - $(esc(x))[2,$(esc(i))])
         end
     end
 end
 
+"""
+    get_ij(j, i, x)
+
+Get the difference of two vectors depending on the spatial dimensions.
+
+``X_j - X_i``
+
+# Arguments
+- `j`: Int64, the index of the first vector.
+- `i`: Int64, the index of the second vector.
+- `x`: Matrix, the matrix of the vectors.
+
+"""
+get_ij(j, i, a) = @_ij(j, i, a)
+
+"""
+    applyops(x)
+
+Apply the operations to the vectors depending on the spatial dimensions.
+
+# Arguments
+- `x`: String, the operations.
+
+"""
 macro applyops(x)
     local a,b,c = replace(x, "#"=>1), replace(x, "#"=>2), replace(x, "#"=>3)
     if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
@@ -160,6 +202,15 @@ macro applyops(x)
     end
 end
 
+"""
+    gatherops(x)
+
+Gather the operations to the vectors depending on the spatial dimensions.
+
+# Arguments
+- `x`: String, the operations.
+
+"""
 macro gatherops(x)
     local a,b,c = replace(x, "#"=>1), replace(x, "#"=>2), replace(x, "#"=>3)
     if PeriDyn.SPATIAL_DIMENSIONS_REF[]==3
@@ -180,16 +231,18 @@ macro gatherops(x)
     end
 end
 
+"""
+    map_reduce(f, op, iter, init)
 
+Map and reduce the operations to the vectors depending on the spatial dimensions.
 
-get_ij(j, i, a) = @_ij(j, i, a)
+# Arguments
+- `f`: Function, the function.
+- `op`: Function, the operation.
+- `iter`: Any, the iterator.
+- `init`: Any, the initial value.
 
-function whatis(a, b, c)
-    println(a)
-    println(b)
-    println(c)
-end
-
+"""
 macro map_reduce(f, op, iter, init)
     if PeriDyn.MULTI_THREAD_REF[]
         quote
@@ -202,8 +255,28 @@ macro map_reduce(f, op, iter, init)
     end
 end
 
+"""
+    map_reduce(f, op, iter; init=0.0)
+
+Map and reduce the operations to the vectors depending on the spatial dimensions.
+
+# Arguments
+- `f`: Function, the function.
+- `op`: Function, the operation.
+- `iter`: Any, the iterator.
+
+# Keyword Arguments
+- `init`: Any, the initial value.
+
+"""
 map_reduce(f, op, iter; init = 0.0) = @map_reduce(f, op, iter, init)
 
+"""
+    refresh()
+
+Refresh the functions which depends on macros.
+
+"""
 function refresh()
     @eval(
         begin

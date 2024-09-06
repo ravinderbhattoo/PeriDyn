@@ -7,61 +7,46 @@ using LinearAlgebra
 using Dates
 using StaticArrays
 using ProgressBars
-using JLD
+using JLD2
 using Flux
 using Zygote
 using Optim
+using Term
+using TimerOutputs
+using Unitful
 
-const PDBlockID = Ref{Int64}(1)
-SOLVERS =  Dict()
-const DEVICE = Ref{Symbol}(:cpu)
+VERSION = "0.1.0"
+version() = println(@yellow(@bold "PeriDyn v$VERSION"))
 
-include("./macros.jl") # macros
+# include all files
+include("./misc/logo.jl") # print logo
+include("./misc/units.jl") # units
+include("./misc/log.jl") # logging
+include("./misc/const_macros.jl") # constatnts and macros
+include("./misc/repr.jl") # printing and displaying variables
+include("./misc/utils.jl") # utility functions
+include("./misc/types.jl") # utility functions
+include("./peri.jl") # peridynamics functions
 
-function set_device(device)
-    device = get_valid_device(device)
-    DEVICE[] = device
-    log_impinfo("PeriDyn: DEVICE set to $(DEVICE[])")
-end
+# define simulation environment
+include("./environment.jl")
 
-function get_valid_device(x)
-    out = x
-    if x==:cuda
-        if !CUDA.functional()
-            out = :cpu
-            log_impinfo("PeriDyn: CUDA is not available.")
-        end
-    else
-        out = :cpu
-        log_impinfo("PeriDyn: Number of threads = $(Threads.nthreads()).")
-    end
-    return out
-end
-
-function reset_cuda()
-    set_device(:cuda)
-end
-
-
-include("./simulation.jl") # define simulation environment
-
-#material models
+# material models
 include("./materials/material.jl")
-
-include("./util.jl") # utility functions
-
-include("./materials/bond_based.jl")
-include("./materials/ordinary_state_based.jl")
-include("./materials/skip_specific.jl")
-include("./materials/pairwiseNN.jl")
-include("./materials/EPS.jl")
 
 # contact models
 include("./contacts/contacts.jl")
 
-include("./boundary_conditions/boundary_conditions.jl") # boundary condition functions
-include("./solvers/solvers.jl") # All implemented solvers
+# boundary condition functions
+include("./boundary_conditions/boundary_conditions.jl")
+
+# All implemented solvers
+include("./solvers/solvers.jl")
+
+# All implemented save and load functions
 include("./io/io.jl")
-include("./cuda.jl")
+
+# All implemented cuda functions
+include("./misc/cuda.jl")
 
 end

@@ -1,13 +1,43 @@
+function set_device(device)
+    device = get_valid_device(device)
+    DEVICE[] = device
+    log_impinfo("PeriDyn: DEVICE set to $(DEVICE[])")
+end
+
+function get_valid_device(x)
+    out = x
+    if x==:cuda
+        if !CUDA.functional()
+            out = :cpu
+            log_impinfo("PeriDyn: CUDA is not available.")
+        end
+    else
+        out = :cpu
+        log_impinfo("PeriDyn: Number of threads = $(Threads.nthreads()).")
+    end
+    return out
+end
+
+function reset_cuda()
+    set_device(:cuda)
+end
+
 _cudaconvert(item) = if item!=[] CuArray(item) else [] end
 _cudaconvert(item::Vector{Any}) = _cudaconvert.(item)
 _cudaconvert(item::Union{Number,String,Bool,Nothing,Function}) = item
 _cudaconvert(item::Ref{T}) where T = item
 _cudaconvert(item::Tuple) = Tuple(_cudaconvert(i) for i in item)
-_cudaconvert(item::UnitRange) = item
 _cudaconvert(item::BitVector) = _cudaconvert(Vector(item))
+_cudaconvert(item::UnitRange) = item
+_cudaconvert(item::VeryBigArray) = item
+
+function _cudaconvert(x::Vector{Bool})
+    range_ = 1:length(x)
+    _cudaconvert(range_[x])
+end
 
 function _cudaconvert(item::Dict)
-    (; (Symbol(k) => _cudaconvert(v) for (k,v) in item)...)
+    Dict((Symbol(k) => _cudaconvert(v) for (k,v) in item)...)
 end
 
 function _cudaconvert2(x::T) where T
